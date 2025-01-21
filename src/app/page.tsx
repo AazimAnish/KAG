@@ -2,30 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  ChevronDown, 
   Menu, 
   X, 
   Upload, 
   Calendar, 
   Sparkles,
-  User,
-  Settings,
-  LogOut,
   Instagram,
   Twitter,
   Linkedin
 } from 'lucide-react';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
