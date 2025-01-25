@@ -54,16 +54,28 @@ export const SignUpForm = () => {
     try {
       setIsLoading(true);
 
-      // First sign up and sign in the user
+      // 1. Create auth user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            gender: data.gender,
+            bodyType: data.bodyType,
+            height: data.measurements.height,
+            weight: data.measurements.weight,
+            chest: data.measurements.chest,
+            waist: data.measurements.waist,
+            hips: data.measurements.hips
+          }
+        }
       });
 
       if (authError) throw authError;
-      if (!authData.user?.id) throw new Error('Failed to create user');
+      if (!authData.user) throw new Error('Failed to create user');
 
-      // Sign in immediately to get the session
+      // 2. Automatically signed in after sign up
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
@@ -71,34 +83,9 @@ export const SignUpForm = () => {
 
       if (signInError) throw signInError;
 
-      // Wait a bit for the session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Update the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          name: data.name,
-          gender: data.gender,
-          body_type: data.bodyType,
-          measurements: {
-            height: Number(data.measurements.height),
-            weight: Number(data.measurements.weight),
-            chest: Number(data.measurements.chest),
-            waist: Number(data.measurements.waist),
-            hips: Number(data.measurements.hips),
-          }
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Profile Error:', profileError);
-        throw new Error('Failed to update profile');
-      }
-
       router.push('/dashboard');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Signup Error:', error);
       form.setError('root', {
         message: error instanceof Error ? error.message : 'Something went wrong'
       });

@@ -23,16 +23,21 @@ export default function DashboardPage() {
           return;
         }
 
-        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authUser.id)
           .single();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // Handle specific Supabase error codes
+          if (profileError.code === 'PGRST116') { // No rows found
+            router.push('/profile-setup');
+            return;
+          }
+          throw new Error(profileError.message);
+        }
 
-        // Transform profile data to match User type
         const userData: User = {
           id: profile.id,
           email: authUser.email!,
@@ -45,7 +50,7 @@ export default function DashboardPage() {
 
         setUser(userData);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error:', error instanceof Error ? error.message : error);
         router.push('/signin');
       } finally {
         setLoading(false);
