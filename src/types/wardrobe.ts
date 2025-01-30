@@ -55,3 +55,23 @@ export const WARDROBE_CATEGORIES = {
     'relaxed'
   ]
 } as const; 
+
+export interface EventDetails {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  event_type: 'formal' | 'casual' | 'business' | 'party' | 'other';
+  date: string;
+  temperature?: number;
+  weather?: string;
+  created_at: string;
+}
+
+export interface OutfitRecommendation {
+  event_id: string;
+  items: WardrobeItem[];
+  description: string;
+  styling_tips: string[];
+  created_at: string;
+}

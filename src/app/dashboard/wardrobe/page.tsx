@@ -9,11 +9,12 @@ import { WardrobeUpload } from '@/components/wardrobe/WardrobeUpload';
 import { WardrobeGrid } from '@/components/wardrobe/WardrobeGrid';
 import { WardrobeNav } from '@/components/wardrobe/WardrobeNav';
 import { styles } from '@/utils/constants';
+import { OutfitRecommender } from '@/components/wardrobe/OutfitRecommender';
 
 export default function WardrobePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'grid' | 'upload'>('grid');
+  const [view, setView] = useState<'grid' | 'upload' | 'recommend'>('grid');
   const [showFilters, setShowFilters] = useState(true);
   const router = useRouter();
 
@@ -74,9 +75,11 @@ export default function WardrobePage() {
           showFilters={showFilters}
         />
         
-        {view === 'upload' ? (
+        {view === 'recommend' ? (
+          <OutfitRecommender userId={user?.id || ''} />
+        ) : view === 'upload' ? (
           <WardrobeUpload 
-            userId={user?.id} 
+            userId={user?.id || ''} 
             onSuccess={() => setView('grid')}
           />
         ) : (
