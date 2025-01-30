@@ -28,9 +28,20 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
             <CardTitle className={styles.primaryText}>Profile</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <p className={styles.secondaryText}>Name: {user.name || 'Not set'}</p>
-              <p className={styles.secondaryText}>Email: {user.email}</p>
+            <div className="space-y-4">
+              {user.avatar_url && (
+                <div className="flex justify-center">
+                  <img
+                    src={user.avatar_url}
+                    alt={user.name || 'Profile'}
+                    className="w-24 h-24 rounded-full object-cover border-2 border-[#347928]/30"
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className={styles.secondaryText}>Name: {user.name || 'Not set'}</p>
+                <p className={styles.secondaryText}>Email: {user.email}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -57,10 +68,10 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
           <CardContent>
             <div className="space-y-2">
               <p className={styles.secondaryText}>
-                Body Type: {user.bodyType.charAt(0).toUpperCase() + user.bodyType.slice(1)}
+                Body Type: {user.bodyType ? user.bodyType.charAt(0).toUpperCase() + user.bodyType.slice(1) : 'Not set'}
               </p>
               <p className={styles.secondaryText}>
-                Gender: {user.gender.charAt(0).toUpperCase() + user.gender.slice(1)}
+                Gender: {user.gender ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1) : 'Not set'}
               </p>
             </div>
           </CardContent>

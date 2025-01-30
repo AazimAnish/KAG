@@ -24,4 +24,18 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-export type SignUpFormData = Omit<UserProfile, 'id' | 'avatar_url'>;
+export type SignUpFormValues = {
+  id?: string;
+  name: string;
+  email: string;
+  password: string;
+  gender: 'male' | 'female' | 'other';
+  bodyType: 'slim' | 'athletic' | 'average' | 'plus';
+  measurements: {
+    height: number;
+    weight: number;
+    chest: number;
+    waist: number;
+    hips?: number;
+  };
+};

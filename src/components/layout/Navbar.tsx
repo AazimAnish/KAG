@@ -27,7 +27,7 @@ export const Navbar = () => {
         if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select()
+            .select('id, name, gender, body_type, avatar_url, measurements')
             .eq('id', session.user.id)
             .single();
 
@@ -36,6 +36,7 @@ export const Navbar = () => {
               id: profile.id,
               email: session.user.email!,
               name: profile.name,
+              avatar_url: profile.avatar_url,
               gender: profile.gender,
               bodyType: profile.body_type,
               measurements: profile.measurements,
@@ -62,7 +63,7 @@ export const Navbar = () => {
       <div className={`${styles.glassmorph} py-4`}>
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Link href="/" className={`text-2xl font-bold ${styles.primaryText}`}>
-            Logo
+            KAG
           </Link>
 
           <div className="flex items-center gap-4">

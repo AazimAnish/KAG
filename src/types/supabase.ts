@@ -11,10 +11,11 @@ export interface Database {
     Tables: {
       profiles: {
         Row: {
-          id: string
+          id: string 
           name: string | null
           gender: string | null
           body_type: string | null
+          avatar_url: string | null
           measurements: {
             height: number
             weight: number
@@ -30,6 +31,7 @@ export interface Database {
           name?: string | null
           gender?: string | null
           body_type?: string | null
+          avatar_url?: string | null
           measurements?: {
             height: number
             weight: number
@@ -45,6 +47,7 @@ export interface Database {
           name?: string | null
           gender?: string | null
           body_type?: string | null
+          avatar_url?: string | null
           measurements?: {
             height: number
             weight: number

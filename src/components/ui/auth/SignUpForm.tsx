@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signUpSchema, type SignUpFormValues } from "@/lib/validations/auth";
@@ -20,17 +20,29 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { styles } from "@/utils/constants";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useDropzone } from 'react-dropzone';
 
 type MeasurementField = 'height' | 'weight' | 'chest' | 'waist' | 'hips';
+
+const measurementHints = {
+  height: 'Height in centimeters (cm)',
+  weight: 'Weight in kilograms (kg)',
+  chest: 'Chest circumference in centimeters (cm)',
+  waist: 'Waist circumference in centimeters (cm)',
+  hips: 'Hip circumference in centimeters (cm)',
+};
 
 export const SignUpForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -50,45 +62,167 @@ export const SignUpForm = () => {
     },
   });
 
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    try {
+      setUploadingAvatar(true);
+      const file = acceptedFiles[0];
+
+      if (!file) {
+        throw new Error('No file selected');
+      }
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        throw new Error('File size must be less than 5MB');
+      }
+
+      // Validate file type using both extension and mime type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please use JPG, PNG or GIF');
+      }
+
+      // Get file extension from mime type
+      const fileExt = file.type.split('/')[1];
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+      // Upload with proper content type
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        if (uploadError.message.includes('storage quota')) {
+          throw new Error('Storage quota exceeded');
+        }
+        throw new Error(uploadError.message || 'Failed to upload image');
+      }
+
+      if (!data?.path) {
+        throw new Error('No upload path returned');
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(data.path);
+
+      if (!publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
+
+      setAvatarUrl(publicUrl);
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      if (error instanceof Error) {
+        form.setError('root', {
+          message: error.message
+        });
+      } else {
+        form.setError('root', {
+          message: 'Failed to upload avatar'
+        });
+      }
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }, [form]);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif']
+    },
+    maxFiles: 1,
+    multiple: false,
+    maxSize: 5 * 1024 * 1024, // 5MB
+  });
+
   const onSubmit = async (data: SignUpFormValues) => {
     try {
       setIsLoading(true);
 
-      // 1. Create auth user with metadata
+      // Sign up the user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             name: data.name,
-            gender: data.gender,
-            bodyType: data.bodyType,
-            height: data.measurements.height,
-            weight: data.measurements.weight,
-            chest: data.measurements.chest,
-            waist: data.measurements.waist,
-            hips: data.measurements.hips
+            full_name: data.name
           }
         }
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
+      if (authError) {
+        if (authError.message.includes('already registered')) {
+          form.setError('email', {
+            message: 'Email already registered. Please sign in instead.'
+          });
+          return;
+        }
+        throw authError;
+      }
 
-      // 2. Automatically signed in after sign up
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+      if (!authData.user?.id) {
+        throw new Error('Failed to create user account');
+      }
 
-      if (signInError) throw signInError;
+      // Create profile with name and avatar
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          name: data.name,
+          gender: data.gender,
+          body_type: data.bodyType,
+          avatar_url: avatarUrl,
+          measurements: {
+            height: Number(data.measurements.height),
+            weight: Number(data.measurements.weight),
+            chest: Number(data.measurements.chest),
+            waist: Number(data.measurements.waist),
+            hips: Number(data.measurements.hips),
+          }
+        }, { onConflict: 'id' });
+
+      if (profileError) {
+        throw new Error('Failed to create profile: ' + profileError.message);
+      }
 
       router.push('/dashboard');
     } catch (error) {
-      console.error('Signup Error:', error);
-      form.setError('root', {
-        message: error instanceof Error ? error.message : 'Something went wrong'
-      });
+      console.error('Signup error:', error);
+      
+      // Handle known error types
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key')) {
+          form.setError('email', {
+            message: 'Email already registered'
+          });
+        } else if (error.message.includes('invalid email')) {
+          form.setError('email', {
+            message: 'Invalid email format'
+          });
+        } else if (error.message.includes('password')) {
+          form.setError('password', {
+            message: 'Password must be at least 6 characters'
+          });
+        } else {
+          form.setError('root', {
+            message: error.message
+          });
+        }
+      } else {
+        form.setError('root', {
+          message: 'An unexpected error occurred'
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +231,28 @@ export const SignUpForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-2">
+          <label className={styles.primaryText}>Profile Picture</label>
+          <div
+            {...getRootProps()}
+            className={`${styles.glassmorph} border-2 border-dashed border-[#347928]/30 
+              rounded-lg p-4 text-center cursor-pointer hover:border-[#347928]/50 transition-colors`}
+          >
+            <input {...getInputProps()} />
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-24 h-24 mx-auto rounded-full object-cover"
+              />
+            ) : (
+              <p className={styles.secondaryText}>
+                {uploadingAvatar ? 'Uploading...' : 'Drop or click to upload profile picture'}
+              </p>
+            )}
+          </div>
+        </div>
+
         <FormField
           control={form.control}
           name="name"
@@ -219,8 +375,12 @@ export const SignUpForm = () => {
                         value={value?.toString() || ''}
                         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                         className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                        placeholder={measurementHints[measurement]}
                       />
                     </FormControl>
+                    <FormDescription className="text-[#FFFDEC]/60">
+                      {measurementHints[measurement]}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
