@@ -16,15 +16,15 @@ export const createClient = async (cookieStore: ReturnType<typeof cookies>) => {
         set(name: string, value: string, options: CookieOptions) {
           try {
             resolvedCookieStore.set({ name, value, ...options });
-          } catch (error) {
-            // Handle cookie setting error
+          } catch (err) {
+            console.error('Error setting cookie:', err);
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             resolvedCookieStore.set({ name, value: '', ...options });
-          } catch (error) {
-            // Handle cookie removal error
+          } catch (err) {
+            console.error('Error removing cookie:', err);
           }
         },
       },

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import Image from 'next/image';
 
 interface WardrobeGridProps {
   userId?: string;
@@ -82,10 +83,11 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
             </CardHeader>
             <CardContent>
               <div className="aspect-square relative overflow-hidden rounded-md">
-                <img
+                <Image
                   src={item.image_url}
                   alt={item.type}
-                  className="object-cover w-full h-full"
+                  fill
+                  className="object-cover"
                 />
               </div>
               <div className="mt-2 flex flex-wrap gap-1">

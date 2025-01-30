@@ -1,6 +1,7 @@
 import { User } from '@/types/auth';
 import { styles } from '@/utils/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
 
 interface DashboardContentProps {
   user: User | null;
@@ -31,11 +32,14 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
             <div className="space-y-4">
               {user.avatar_url && (
                 <div className="flex justify-center">
-                  <img
-                    src={user.avatar_url}
-                    alt={user.name || 'Profile'}
-                    className="w-24 h-24 rounded-full object-cover border-2 border-[#347928]/30"
-                  />
+                  <div className="relative w-24 h-24">
+                    <Image
+                      src={user.avatar_url}
+                      alt={user.name || 'Profile'}
+                      fill
+                      className="rounded-full object-cover border-2 border-[#347928]/30"
+                    />
+                  </div>
                 </div>
               )}
               <div className="space-y-2">

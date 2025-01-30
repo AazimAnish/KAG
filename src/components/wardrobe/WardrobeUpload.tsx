@@ -61,7 +61,7 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
         const filePath = `${userId}/${fileName}`;
 
         // Upload to Supabase Storage
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('wardrobe')
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -74,7 +74,7 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('wardrobe')
-          .getPublicUrl(filePath);
+          .getPublicUrl(uploadData.path);
 
         // Analyze the image using Llama Vision
         const analysis = await analyzeImage(publicUrl);
