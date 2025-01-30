@@ -27,6 +27,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useDropzone } from 'react-dropzone';
+import Image from 'next/image';
 
 type MeasurementField = 'height' | 'weight' | 'chest' | 'waist' | 'hips';
 
@@ -240,11 +241,14 @@ export const SignUpForm = () => {
           >
             <input {...getInputProps()} />
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="w-24 h-24 mx-auto rounded-full object-cover"
-              />
+              <div className="relative w-24 h-24 mx-auto">
+                <Image
+                  src={avatarUrl}
+                  alt="Avatar"
+                  fill
+                  className="rounded-full object-cover"
+                />
+              </div>
             ) : (
               <p className={styles.secondaryText}>
                 {uploadingAvatar ? 'Uploading...' : 'Drop or click to upload profile picture'}
