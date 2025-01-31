@@ -40,6 +40,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
   const [chats, setChats] = useState<OutfitChatType[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadChats();
@@ -94,10 +95,19 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
-    setLoading(true);
     try {
+      setLoading(true);
+      const newMessage: ChatMessage = {
+        role: 'user',
+        content: input,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, newMessage]);
+      setInput('');
+
       const response = await fetch('/api/outfit-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,28 +115,33 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
           userId,
           outfitId,
           message: input,
-          chatId: activeChatId,
           previousMessages: messages,
-          outfitDetails
+          chatId: activeChatId,
+          outfitDetails,
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-
-      if (!activeChatId) {
-        setActiveChatId(data.chatId);
-        await loadChats();
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
 
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', content: input },
-        { role: 'assistant', content: data.message }
-      ]);
-      setInput('');
+      const data = await response.json();
+      
+      if (!activeChatId && data.chatId) {
+        setActiveChatId(data.chatId);
+      }
+
+      const aiMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.message,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      scrollToBottom();
     } catch (error) {
       console.error('Chat error:', error);
+      setError('Failed to send message');
     } finally {
       setLoading(false);
     }

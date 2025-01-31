@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         .from('outfit_chats')
         .insert({
           user_id: userId,
-          outfit_id: outfitId,
+          outfit_recommendation_id: outfitId,
           title: message.slice(0, 50) + '...',
           created_at: new Date().toISOString(),
           last_message_at: new Date().toISOString()
@@ -29,40 +29,51 @@ export async function POST(request: Request) {
         .select()
         .single();
 
-      if (chatError) throw chatError;
+      if (chatError) {
+        console.error('Chat creation error:', chatError);
+        throw chatError;
+      }
       chatId = chat.id;
     }
 
     // Save user message
-    await supabase.from('chat_messages').insert({
-      chat_id: chatId,
-      user_id: userId,
-      content: message,
-      role: 'user',
-      created_at: new Date().toISOString()
-    });
+    const { error: userMessageError } = await supabase
+      .from('chat_messages')
+      .insert({
+        chat_id: chatId,
+        user_id: userId,
+        content: message,
+        role: 'user',
+        created_at: new Date().toISOString()
+      });
 
-    // Get AI response
+    if (userMessageError) {
+      console.error('User message error:', userMessageError);
+      throw userMessageError;
+    }
+
+    // Include outfit context in the prompt
+    const contextPrompt = `As an AI fashion stylist, help with this outfit: ${outfitDetails.description}. 
+The outfit includes: ${outfitDetails.items.map((item: any) => item.type).join(', ')}. 
+Previous styling tips: ${outfitDetails.styling_tips.join(', ')}. 
+
+User question: ${message}
+
+Provide specific advice considering the existing outfit components.`;
+
     const completion = await groq.chat.completions.create({
       messages: [
         {
           role: "system",
-          content: `You are a fashion assistant helping with outfit recommendations. Keep responses concise and focused on the current outfit:
-${JSON.stringify(outfitDetails, null, 2)}
-
-Focus on:
-- Styling advice for the recommended outfit
-- Answering questions about outfit combinations
-- Suggesting alternatives
-- Practical wearing and accessorizing tips`
+          content: "You are a helpful fashion stylist assistant. Provide specific advice about outfit modifications, alternatives, and styling tips."
         },
-        ...previousMessages.map((msg: { role: string; content: string }) => ({
+        ...previousMessages.map((msg: any) => ({
           role: msg.role,
           content: msg.content
         })),
         {
           role: "user",
-          content: message
+          content: contextPrompt
         }
       ],
       model: "mixtral-8x7b-32768",
@@ -73,19 +84,31 @@ Focus on:
     const aiResponse = completion.choices[0]?.message?.content || '';
 
     // Save AI response
-    await supabase.from('chat_messages').insert({
-      chat_id: chatId,
-      user_id: userId,
-      content: aiResponse,
-      role: 'assistant',
-      created_at: new Date().toISOString()
-    });
+    const { error: aiMessageError } = await supabase
+      .from('chat_messages')
+      .insert({
+        chat_id: chatId,
+        user_id: userId,
+        content: aiResponse,
+        role: 'assistant',
+        created_at: new Date().toISOString()
+      });
+
+    if (aiMessageError) {
+      console.error('AI message error:', aiMessageError);
+      throw aiMessageError;
+    }
 
     // Update last_message_at
-    await supabase
+    const { error: updateError } = await supabase
       .from('outfit_chats')
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', chatId);
+
+    if (updateError) {
+      console.error('Update chat error:', updateError);
+      throw updateError;
+    }
 
     return NextResponse.json({
       chatId,
@@ -95,7 +118,10 @@ Focus on:
   } catch (error) {
     console.error('Error in outfit chat:', error);
     return NextResponse.json(
-      { error: 'Failed to process chat message' },
+      { 
+        error: 'Failed to process chat message',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
