@@ -66,7 +66,7 @@ export default function WardrobePage() {
 
   return (
     <div className={`min-h-screen ${styles.darkBg}`}>
-      <DashboardHeader user={user} />
+      {/* <DashboardHeader user={user} /> */}
       <main className="container mx-auto px-4 pt-24">
         <WardrobeNav
           view={view}

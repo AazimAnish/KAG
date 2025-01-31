@@ -1,17 +1,16 @@
-import Groq from "groq-sdk";
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import Groq from "groq-sdk";
+import { UserProfile } from '@/types/profile'; // Adjust the import path as necessary
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-async function validateUserProfile(userId: string) {
-  interface Profile {
-    id: string;
-    body_type: string;
-    gender: string;
-  }
+async function validateUserProfile(userId: string): Promise<UserProfile> {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
   const { data: profile, error } = await supabase
     .from('profiles')
@@ -26,31 +25,39 @@ async function validateUserProfile(userId: string) {
     throw error;
   }
 
-  const requiredFields = ['body_type', 'gender'] as (keyof Profile)[];
+  const requiredFields: (keyof UserProfile)[] = ['body_type', 'gender'];
   const missingFields = requiredFields.filter(field => !profile[field]);
 
   if (missingFields.length > 0) {
     throw new Error('PROFILE_INCOMPLETE');
   }
 
-  return profile as Profile;
+  return profile;
 }
 
 async function validateWardrobe(userId: string) {
-  const { data: items, error } = await supabase
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+  const { data: wardrobeItems, error } = await supabase
     .from('wardrobe_items')
     .select('*')
     .eq('user_id', userId)
     .eq('status', 'completed');
 
   if (error) throw error;
-  if (!items?.length) throw new Error('WARDROBE_EMPTY');
-  
-  return items;
+
+  if (!wardrobeItems?.length) {
+    throw new Error('WARDROBE_EMPTY');
+  }
+
+  return wardrobeItems;
 }
 
 export async function POST(request: Request) {
   try {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     const { eventId, userId } = await request.json();
 
     if (!eventId || !userId) {
@@ -61,11 +68,8 @@ export async function POST(request: Request) {
     }
 
     try {
-      // Validate user profile first
       const profile = await validateUserProfile(userId);
-      console.log('Profile validated successfully');
-
-      // Fetch event details
+      const wardrobeItems = await validateWardrobe(userId);
       const { data: event, error: eventError } = await supabase
         .from('events')
         .select('*')
@@ -73,87 +77,123 @@ export async function POST(request: Request) {
         .single();
 
       if (eventError) {
-        console.error('Error fetching event:', eventError);
-        return NextResponse.json(
-          { error: 'Event not found' },
-          { status: 404 }
-        );
+        throw new Error('Event not found');
       }
 
-      // Validate wardrobe
-      const wardrobeItems = await validateWardrobe(userId);
-      console.log(`Found ${wardrobeItems.length} wardrobe items`);
+      // Simplified and more structured prompt
+      const systemPrompt = `You are a fashion expert creating outfit recommendations. 
+Format your response as a valid JSON object with this exact structure:
+{
+  "outfit": {
+    "description": "Brief outfit description",
+    "items": [
+      {
+        "id": "ID from available items",
+        "type": "Type of item",
+        "styling_notes": "How to wear this piece",
+        "image_url": "URL from available items"
+      }
+    ],
+    "styling_tips": ["tip1", "tip2", "tip3"]
+  }
+}
+
+Event Context:
+- Description: ${event.description}
+- Type: ${event.event_type}
+- Date: ${event.date}
+
+User Profile:
+- Body Type: ${profile.body_type}
+- Gender: ${profile.gender}
+
+Available Items:
+${JSON.stringify(wardrobeItems.map(item => ({
+  id: item.id,
+  type: item.type,
+  image_url: item.image_url
+})), null, 2)}`;
 
       const completion = await groq.chat.completions.create({
         messages: [
           {
-            role: "user",
-            content: `As a fashion expert, create an outfit recommendation based on the following:
-
-Event Details:
-${event.description}
-Type: ${event.event_type}
-Date: ${event.date}
-
-User Profile:
-Body Type: ${profile.body_type}
-Gender: ${profile.gender}
-
-Available Wardrobe Items:
-${JSON.stringify(wardrobeItems, null, 2)}
-
-Provide recommendations in the following JSON format:
-{
-  "outfit": {
-    "items": [
-      {
-        "id": "item_id",
-        "type": "item_type",
-        "styling_notes": "how to wear",
-        "image_url": "url_from_wardrobe_items"
-      }
-    ],
-    "description": "overall outfit description",
-    "styling_tips": ["tip1", "tip2", "tip3"]
-  }
-}`
+            role: "system",
+            content: systemPrompt
           }
         ],
         model: "mixtral-8x7b-32768",
-        temperature: 0.7,
+        temperature: 0.5, // Reduced for more consistent output
         max_tokens: 1024,
         top_p: 1,
         stream: false,
+        response_format: { type: "json_object" }
       });
 
       const response = completion.choices[0]?.message?.content || '';
       let recommendation;
-      
-      try {
-        recommendation = JSON.parse(response);
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-        return NextResponse.json(
-          { error: 'Failed to generate recommendation' },
-          { status: 500 }
-        );
-      }
 
-      // Save recommendation to database
-      const { error: saveError } = await supabase
-        .from('outfit_recommendations')
-        .insert({
-          event_id: eventId,
-          user_id: userId,
-          recommendation: recommendation.outfit,
-          created_at: new Date().toISOString()
+      try {
+        // Clean and validate the response
+        const cleanedResponse = response
+          .replace(/```json\s*|\s*```/g, '') // Remove markdown code blocks
+          .replace(/\n/g, ' ') // Remove newlines
+          .trim();
+
+        recommendation = JSON.parse(cleanedResponse);
+
+        // Validate the structure
+        if (!recommendation?.outfit?.items?.length) {
+          throw new Error('Invalid outfit structure');
+        }
+
+        // Validate each item has required fields
+        recommendation.outfit.items.forEach((item: { id: string; type: string; styling_notes: string; image_url: string }) => {
+          if (!item.id || !item.type || !item.styling_notes || !item.image_url) {
+            throw new Error('Missing required item fields');
+          }
         });
 
-      if (saveError) {
-        console.error('Error saving recommendation:', saveError);
-      }
+        // Save recommendation to database
+        const { error: saveError } = await supabase
+          .from('outfit_recommendations')
+          .insert({
+            event_id: eventId,
+            user_id: userId,
+            recommendation: recommendation.outfit,
+            created_at: new Date().toISOString()
+          });
 
-      return NextResponse.json(recommendation);
+        if (saveError) {
+          console.error('Error saving recommendation:', saveError);
+        }
+
+        return NextResponse.json(recommendation);
+
+      } catch (parseError) {
+        console.error('Error parsing AI response:', parseError);
+        console.error('Raw response:', response);
+        
+        // Attempt to recover from common formatting issues
+        try {
+          const fixedResponse = response
+            .replace(/\\/g, '') // Remove escaped characters
+            .replace(/"\s*\+\s*"/g, '') // Fix concatenated strings
+            .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+            .replace(/([{\[]\s*),/g, '$1') // Remove leading commas
+            .trim();
+          
+          recommendation = JSON.parse(fixedResponse);
+          return NextResponse.json(recommendation);
+        } catch (recoveryError) {
+          return NextResponse.json(
+            { 
+              error: 'Failed to generate recommendation',
+              details: 'Invalid response format'
+            },
+            { status: 500 }
+          );
+        }
+      }
 
     } catch (error) {
       if (error instanceof Error) {

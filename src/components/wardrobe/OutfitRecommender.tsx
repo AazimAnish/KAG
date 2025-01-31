@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/lib/supabase/client';
 import { WardrobeItem } from '@/types/wardrobe';
 import Image from 'next/image';
+import { OutfitChat } from '@/components/chat/OutfitChat';
 
 interface OutfitRecommenderProps {
   userId: string;
@@ -106,109 +107,119 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
-        <CardHeader>
-          <CardTitle className={styles.primaryText}>Get Outfit Recommendation</CardTitle>
-          <CardDescription className={styles.secondaryText}>
-            Tell us about your event and we'll suggest the perfect outfit
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              placeholder="Event Title"
-              value={eventDetails.title}
-              onChange={(e) => setEventDetails(prev => ({ ...prev, title: e.target.value }))}
-              className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
-              required
-            />
-
-            <Textarea
-              placeholder="Describe your event..."
-              value={eventDetails.description}
-              onChange={(e) => setEventDetails(prev => ({ ...prev, description: e.target.value }))}
-              className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
-              required
-            />
-
-            <Select
-              value={eventDetails.event_type}
-              onValueChange={(value) => setEventDetails(prev => ({ ...prev, event_type: value }))}
-            >
-              <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
-                <SelectValue placeholder="Event Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="casual">Casual</SelectItem>
-                <SelectItem value="formal">Formal</SelectItem>
-                <SelectItem value="business">Business</SelectItem>
-                <SelectItem value="party">Party</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              type="date"
-              value={eventDetails.date}
-              onChange={(e) => setEventDetails(prev => ({ ...prev, date: e.target.value }))}
-              className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
-            />
-
-            <Button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
-            >
-              {loading ? "Generating..." : "Get Recommendations"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {recommendation && (
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
         <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
           <CardHeader>
-            <CardTitle className={styles.primaryText}>Your Perfect Outfit</CardTitle>
+            <CardTitle className={styles.primaryText}>Get Outfit Recommendation</CardTitle>
+            <CardDescription className={styles.secondaryText}>
+              Tell us about your event and we'll suggest the perfect outfit
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              <p className={styles.secondaryText}>{recommendation.description}</p>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {recommendation.items.map((item: any, index: number) => (
-                  <div key={index} className="space-y-2">
-                    {item.image_url && (
-                      <div className="aspect-square relative rounded-lg overflow-hidden">
-                        <Image
-                          src={item.image_url}
-                          alt={item.type || 'Wardrobe item'}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <p className={`text-sm ${styles.secondaryText}`}>{item.styling_notes}</p>
-                  </div>
-                ))}
+            {error && (
+              <div className="mb-4 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm">
+                {error}
               </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                placeholder="Event Title"
+                value={eventDetails.title}
+                onChange={(e) => setEventDetails(prev => ({ ...prev, title: e.target.value }))}
+                className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                required
+              />
 
-              <div className="space-y-2">
-                <h4 className={`font-semibold ${styles.primaryText}`}>Styling Tips:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  {recommendation.styling_tips.map((tip: string, index: number) => (
-                    <li key={index} className={styles.secondaryText}>{tip}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+              <Textarea
+                placeholder="Describe your event..."
+                value={eventDetails.description}
+                onChange={(e) => setEventDetails(prev => ({ ...prev, description: e.target.value }))}
+                className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                required
+              />
+
+              <Select
+                value={eventDetails.event_type}
+                onValueChange={(value) => setEventDetails(prev => ({ ...prev, event_type: value }))}
+              >
+                <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+                  <SelectValue placeholder="Event Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="casual">Casual</SelectItem>
+                  <SelectItem value="formal">Formal</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                  <SelectItem value="party">Party</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Input
+                type="date"
+                value={eventDetails.date}
+                onChange={(e) => setEventDetails(prev => ({ ...prev, date: e.target.value }))}
+                className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+              />
+
+              <Button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+              >
+                {loading ? "Generating..." : "Get Recommendations"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
+
+        {recommendation && (
+          <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+            <CardHeader>
+              <CardTitle className={styles.primaryText}>Your Perfect Outfit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <p className={styles.secondaryText}>{recommendation.description}</p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {recommendation.items.map((item: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      {item.image_url && (
+                        <div className="aspect-square relative rounded-lg overflow-hidden">
+                          <Image
+                            src={item.image_url}
+                            alt={item.type || 'Wardrobe item'}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <p className={`text-sm ${styles.secondaryText}`}>{item.styling_notes}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className={`font-semibold ${styles.primaryText}`}>Styling Tips:</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {recommendation.styling_tips.map((tip: string, index: number) => (
+                      <li key={index} className={styles.secondaryText}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {recommendation && (
+        <OutfitChat 
+          userId={userId} 
+          outfitId={recommendation.id}
+          outfitDetails={recommendation}
+        />
       )}
     </div>
   );
