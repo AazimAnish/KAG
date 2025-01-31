@@ -14,6 +14,18 @@ import {
 import { supabase } from '@/lib/supabase/client';
 import { ChatMessage, OutfitChat as OutfitChatType } from '@/types/chat';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface OutfitChatProps {
   userId: string;
@@ -120,6 +132,37 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
     }
   };
 
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      // Delete chat messages first
+      const { error: messagesError } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('chat_id', chatId);
+
+      if (messagesError) throw messagesError;
+
+      // Delete the chat
+      const { error: chatError } = await supabase
+        .from('outfit_chats')
+        .delete()
+        .eq('id', chatId);
+
+      if (chatError) throw chatError;
+
+      // Refresh chat list
+      await loadChats();
+      
+      // Reset current chat if it was deleted
+      if (activeChatId === chatId) {
+        setActiveChatId(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+    }
+  };
+
   return (
     <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
       <CardHeader className="space-y-1">
@@ -139,27 +182,67 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-4 gap-4" style={{ height: 'calc(70vh - 100px)' }}>
+        <div className="grid grid-cols-4 gap-4" style={{ height: 'calc(60vh - 100px)' }}>
           {/* Chat History Sidebar */}
-          <div className="col-span-1 border-r border-[#347928]/20 pr-4 h-full overflow-hidden">
+          <div className="col-span-1 border-r border-[#347928]/20 pr-4 h-full">
             <ScrollArea className="h-full">
-              <div className="space-y-2 pr-4">
+              <div className="space-y-2 pr-2">
                 {chats.map(chat => (
                   <div
                     key={chat.id}
-                    onClick={() => setActiveChatId(chat.id)}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
                       activeChatId === chat.id 
                         ? 'bg-[#347928]/20' 
                         : 'hover:bg-[#347928]/10'
                     }`}
                   >
-                    <p className={`${styles.secondaryText} truncate text-sm font-medium`}>
-                      {chat.title}
-                    </p>
-                    <p className={`${styles.secondaryText} text-xs opacity-60 mt-1`}>
-                      {new Date(chat.created_at).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <div
+                        onClick={() => setActiveChatId(chat.id)}
+                        className="flex-1"
+                      >
+                        <p className={`${styles.secondaryText} truncate text-sm font-medium`}>
+                          {chat.title}
+                        </p>
+                        <p className={`${styles.secondaryText} text-xs opacity-60 mt-1`}>
+                          {new Date(chat.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-red-500/10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className={`${styles.glassmorph} border-[#347928]/30`}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className={styles.primaryText}>
+                              Delete Chat History
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className={styles.secondaryText}>
+                              This will permanently delete this chat history.
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className={`${styles.glassmorph} hover:bg-[#347928]/20`}>
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteChat(chat.id)}
+                              className="bg-red-500 hover:bg-red-600"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -186,7 +269,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
             </ScrollArea>
 
             {/* Chat Input */}
-            <div className="border-t border-[#347928]/20 p-4 mt-auto">
+            <div className="border-t border-[#347928]/20 p-4">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
                   value={input}

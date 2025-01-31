@@ -75,3 +75,31 @@ export interface OutfitRecommendation {
   styling_tips: string[];
   created_at: string;
 }
+
+export interface OutfitSuggestion {
+  id: string;
+  user_id: string;
+  event_id: string;
+  recommendation: {
+    description: string;
+    items: Array<{
+      id: string;
+      type: string;
+      styling_notes: string;
+      image_url: string;
+    }>;
+    styling_tips: string[];
+  };
+  created_at: string;
+  events?: OutfitEvent[];
+}
+
+export interface OutfitEvent {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  event_type: string;
+  date: string;
+  created_at: string;
+}
