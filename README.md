@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Wardrobe Assistant
 
-## Getting Started
+## 📌 Project Overview
+AI Wardrobe Assistant is an intelligent fashion assistant that helps users curate outfits based on their wardrobe, body profile, and event requirements. Users can register, upload clothing items, and request outfit recommendations for different occasions using text or voice input. The AI analyzes user data and suggests the best clothing combinations.
 
-First, run the development server:
+## 🛠️ Tech Stack
+- **Frontend:** Next.js 15 (App Router), TypeScript, ShadCN
+- **Backend:** Supabase (Database & Auth)
+- **AI Models:**
+  - **Llama-3.2-90B-Vision (Groq):** Outfit recommendations
+  - **Mixtral-8x7b-32768:** Chat-based recommendation refinement
+- **Additional Libraries:**
+  - `@speechly/react` for voice input processing
+  - TailwindCSS for styling
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Features
+### 1. User Authentication
+- Secure sign-up & login using Supabase Auth
+- Profile setup with user image, body size, and shape
+
+### 2. Wardrobe Management
+- Users can upload images of clothing items (shirts, pants, dresses, etc.)
+- Categorization based on type, color, and season
+
+### 3. Event Stylist Assistant
+#### **Event Details Input**
+- Users provide event details via:
+  - **Text Input:** "I need a formal outfit for a wedding."
+  - **Voice Input:** Speech-to-text conversion using `@speechly/react`
+- Event details stored in Supabase
+
+#### **AI Outfit Recommendation**
+- Uses **Llama-3.2-90B-Vision** to analyze:
+  - User wardrobe for matching items
+  - Preferences (body type, style, colors)
+  - Event-specific outfit suggestions
+
+#### **AI Chat Assistance**
+- Users can refine recommendations via chat using **Mixtral-8x7b-32768**
+- Stores chat history for personalized suggestions
+- Allows new task creation based on feedback
+
+## 📂 Project Structure
+```
+/ai-wardrobe-assistant
+├── /app  # Next.js App Router setup
+│   ├── /auth  # User authentication
+│   ├── /wardrobe  # Clothing management
+│   ├── /event  # Event input and AI recommendation
+│   ├── /chat  # AI-powered conversation for refining recommendations
+├── /components  # Reusable UI components
+├── /lib  # Utility functions & API calls
+├── /public  # Static assets
+├── /styles  # TailwindCSS styles
+├── /server  # API routes for AI integration
+├── README.md
+└── package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Setup & Installation
+### Prerequisites
+- Node.js 18+
+- Supabase account & project
+- API keys for **Groq (Llama-3.2-90B-Vision, Mixtral-8x7b-32768)**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Installation Steps
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/AazimAnish/Chic-AI
+   cd Chic-AI
+   ```
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
+3. **Set up environment variables:**
+   Create a `.env.local` file and add:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   GROQ_API_KEY=your_groq_api_key
+   ```
+4. **Run the project:**
+   ```sh
+   npm run dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📌 Future Enhancements
+- Outfit recommendations based on weather conditions
+- Integration with online stores for shopping suggestions
+- Social sharing of outfit ideas
+- AI-driven wardrobe organization
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+🚀 **AI Wardrobe Assistant** - Your AI-powered fashion guide!
