@@ -24,14 +24,29 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // First, clear any existing sessions
+      await supabase.auth.signOut({ scope: 'local' });
+      
+      // Clear any cached data
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Force a router refresh to clear client-side cache
+      router.refresh();
+
+      // Navigate to signin page
       router.push('/signin');
+
+      // Force page reload after a short delay to ensure clean state
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
-      console.error('Error logging out:', error);
-      // Force clear the session if there's an error
-      supabase.auth.signOut();
-      router.push('/signin');
+      console.error('Error during logout:', error);
+      // Fallback: force clear everything
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/signin';
     }
   };
 
