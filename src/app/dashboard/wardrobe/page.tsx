@@ -19,6 +19,8 @@ export default function WardrobePage() {
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
+
     const checkUser = async () => {
       try {
         const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -36,24 +38,38 @@ export default function WardrobePage() {
 
         if (profileError) throw profileError;
 
-        setUser({
-          id: profile.id,
-          email: authUser.email!,
-          name: profile.name,
-          avatar_url: profile.avatar_url,
-          gender: profile.gender,
-          bodyType: profile.body_type,
-          measurements: profile.measurements,
-        });
+        if (mounted) {
+          setUser({
+            id: profile.id,
+            email: authUser.email!,
+            name: profile.name,
+            avatar_url: profile.avatar_url,
+            gender: profile.gender,
+            bodyType: profile.body_type,
+            measurements: profile.measurements,
+          });
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error:', error);
-        router.push('/signin');
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          router.push('/signin');
+        }
       }
     };
 
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/signin');
+      }
+    });
+
     checkUser();
+
+    return () => {
+      mounted = false;
+      authListener.data.subscription.unsubscribe();
+    };
   }, [router]);
 
   if (loading) {
@@ -67,7 +83,7 @@ export default function WardrobePage() {
   return (
     <div className={`min-h-screen ${styles.darkBg}`}>
       {/* <DashboardHeader user={user} /> */}
-      <main className="container mx-auto px-4 pt-24">
+      <main className="container mx-auto px-4 pt-12">
         <WardrobeNav
           view={view}
           onViewChange={setView}

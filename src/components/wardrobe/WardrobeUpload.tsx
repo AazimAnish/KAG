@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 
 interface WardrobeUploadProps {
   userId?: string;
@@ -20,6 +21,7 @@ interface WardrobeUploadProps {
 }
 
 export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
+  const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -45,7 +47,14 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
   };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!userId) return;
+    if (!userId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "User not authenticated"
+      });
+      return;
+    }
 
     try {
       setUploading(true);
@@ -53,7 +62,12 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
 
       for (const file of acceptedFiles) {
         if (file.size > 10 * 1024 * 1024) {
-          throw new Error('File size must be less than 10MB');
+          toast({
+            variant: "destructive",
+            title: "Upload Error",
+            description: "File size must be less than 10MB"
+          });
+          continue;
         }
 
         const fileExt = file.name.split('.').pop();
@@ -93,6 +107,12 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
         if (dbError) throw dbError;
 
         setProgress((prev) => prev + (100 / acceptedFiles.length));
+
+        toast({
+          variant: "success",
+          title: "Success",
+          description: "Item uploaded successfully"
+        });
       }
 
       if (onSuccess) {
@@ -100,12 +120,16 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      // Handle error appropriately
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: error instanceof Error ? error.message : "Failed to upload item"
+      });
     } finally {
       setUploading(false);
       setProgress(0);
     }
-  }, [userId, onSuccess]);
+  }, [userId, onSuccess, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

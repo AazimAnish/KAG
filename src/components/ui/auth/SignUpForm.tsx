@@ -28,6 +28,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useDropzone } from 'react-dropzone';
 import Image from 'next/image';
+import { useToast } from "@/hooks/use-toast";
 
 type MeasurementField = 'height' | 'weight' | 'chest' | 'waist' | 'hips';
 
@@ -44,6 +45,7 @@ export const SignUpForm = () => {
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -69,11 +71,21 @@ export const SignUpForm = () => {
       const file = acceptedFiles[0];
 
       if (!file) {
-        throw new Error('No file selected');
+        toast({
+          variant: "destructive",
+          title: "Upload Error",
+          description: "No file selected"
+        });
+        return;
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        throw new Error('File size must be less than 5MB');
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "File size too large",
+          description: "File size must be less than 5MB"
+        });
+        return;
       }
 
       // Validate file type using both extension and mime type
@@ -116,21 +128,23 @@ export const SignUpForm = () => {
       }
 
       setAvatarUrl(publicUrl);
+
+      toast({
+        variant: "success",
+        title: "Success",
+        description: "Profile picture uploaded successfully"
+      });
     } catch (error) {
       console.error('Avatar upload error:', error);
-      if (error instanceof Error) {
-        form.setError('root', {
-          message: error.message
-        });
-      } else {
-        form.setError('root', {
-          message: 'Failed to upload avatar'
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: error instanceof Error ? error.message : "Failed to upload avatar"
+      });
     } finally {
       setUploadingAvatar(false);
     }
-  }, [form]);
+  }, [form, toast]);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,
