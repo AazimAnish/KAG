@@ -13,7 +13,7 @@ export const WardrobeNav = ({ view, onViewChange, onToggleFilters, showFilters }
   return (
     <div className="flex items-center justify-between mb-6">
       <h1 className={`text-3xl font-bold ${styles.primaryText}`}>My Wardrobe</h1>
-      
+
       <div className="flex gap-2">
         <Button
           variant="ghost"
