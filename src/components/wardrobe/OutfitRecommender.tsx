@@ -38,14 +38,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OutfitTryOn } from './OutfitTryOn';
 import { User } from '@/types/auth';
+import { Loader2, ShoppingBag } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 interface OutfitRecommenderProps {
   userId: string;
 }
 
+interface ClothingItem {
+  id: string;
+  name: string;
+  category: string;
+  color: string;
+  image_url: string;
+  type: string;
+  styling_notes?: string;
+  styling_tips?: string[];
+  isStoreItem?: boolean;
+  price?: number;
+}
+
 export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [loading, setLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState<OutfitSuggestion | null>(null);
+  const [recommendation, setRecommendation] = useState<ClothingItem[]>([]);
   const [pastSuggestions, setPastSuggestions] = useState<OutfitSuggestion[]>([]);
   const [events, setEvents] = useState<OutfitEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -59,11 +75,15 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [showNewEvent, setShowNewEvent] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [wardrobeItems, setWardrobeItems] = useState<ClothingItem[]>([]);
+  const [storeItems, setStoreItems] = useState<ClothingItem[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadPastSuggestions();
     loadEvents();
     loadUser();
+    fetchWardrobeAndStoreItems();
   }, [userId]);
 
   const loadPastSuggestions = async () => {
@@ -75,8 +95,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
     if (data) {
       setPastSuggestions(data);
-      if (data.length > 0 && !recommendation) {
-        setRecommendation(data[0]);
+      if (data.length > 0 && !recommendation.length) {
+        setRecommendation(data[0].recommendation.items);
       }
     }
   };
@@ -109,6 +129,65 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         gender: data.gender,
         bodyType: data.body_type,
         measurements: data.measurements,
+      });
+    }
+  };
+
+  const fetchWardrobeAndStoreItems = async () => {
+    try {
+      // Check if tables exist first
+      const { data: tables } = await supabase
+        .from('pg_tables')
+        .select('tablename')
+        .in('tablename', ['wardrobe_items', 'products']);
+
+      // Fetch wardrobe items with error handling
+      const wardrobeResult = await supabase
+        .from('wardrobe_items')
+        .select('id, type, image_url, category, color')
+        .eq('user_id', userId)
+        .eq('status', 'completed');
+
+      if (wardrobeResult.error) {
+        console.error('Wardrobe fetch error:', wardrobeResult.error.message);
+      } else {
+        setWardrobeItems(wardrobeResult.data?.map(item => ({
+          id: item.id,
+          name: item.type,
+          category: item.category || item.type,
+          color: item.color || '',
+          image_url: item.image_url,
+          type: item.type
+        })) || []);
+      }
+
+      // Fetch store items with error handling
+      const storeResult = await supabase
+        .from('products')
+        .select('id, name, description, price, image_url, category, color')
+        .eq('in_stock', true);
+
+      if (storeResult.error) {
+        console.error('Store fetch error:', storeResult.error.message);
+      } else {
+        setStoreItems(storeResult.data?.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          color: item.color || '',
+          image_url: item.image_url,
+          type: item.category,
+          price: item.price,
+          isStoreItem: true
+        })) || []);
+      }
+
+    } catch (error) {
+      console.error('Database connection error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to connect to database"
       });
     }
   };
@@ -148,7 +227,22 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       }
 
       const newRecommendation = await response.json();
-      setRecommendation(newRecommendation);
+      
+      if (!newRecommendation?.recommendation?.items) {
+        throw new Error('Invalid recommendation format received');
+      }
+
+      setRecommendation(newRecommendation.recommendation.items.map((item: any) => ({
+        id: item.id || '',
+        name: item.type || '',
+        category: item.type || '',
+        color: item.color || '',
+        image_url: item.image_url || '',
+        type: item.type || '',
+        styling_notes: item.styling_notes || '',
+        styling_tips: item.styling_tips || []
+      })));
+      
       setShowChat(true);
       await loadPastSuggestions();
       setShowNewEvent(false);
@@ -235,8 +329,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       await loadPastSuggestions();
       
       // Reset current recommendation if it was deleted
-      if (recommendation?.id === suggestionId) {
-        setRecommendation(null);
+      if (recommendation.length === 1 && recommendation[0].id === suggestionId) {
+        setRecommendation([]);
         setShowNewEvent(true);
       }
 
@@ -251,6 +345,38 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         stack: error instanceof Error ? error.stack : undefined
       });
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
+  };
+
+  const generateRecommendation = async () => {
+    setLoading(true);
+    try {
+      // Combine wardrobe and store items for recommendation
+      const allItems = [...wardrobeItems, ...storeItems];
+      
+      // Your existing recommendation logic here
+      // For example, randomly selecting items from different categories
+      const categories = ['top', 'bottom', 'outerwear', 'shoes', 'accessories'];
+      const outfit: ClothingItem[] = [];
+
+      categories.forEach(category => {
+        const categoryItems = allItems.filter(item => item.category.toLowerCase() === category);
+        if (categoryItems.length > 0) {
+          const randomItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
+          outfit.push(randomItem);
+        }
+      });
+
+      setRecommendation(outfit);
+    } catch (error) {
+      console.error('Error generating recommendation:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate recommendation"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -278,7 +404,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 {pastSuggestions.map((suggestion) => (
                   <div
                     key={suggestion.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${recommendation?.id === suggestion.id
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${recommendation.length === 1 && recommendation[0].id === suggestion.id
                       ? 'bg-[#347928]/20'
                       : 'hover:bg-[#347928]/10'
                       }`}
@@ -286,7 +412,12 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                     <div className="flex items-center justify-between">
                       <div
                         onClick={() => {
-                          setRecommendation(suggestion);
+                          setRecommendation(suggestion.recommendation.items.map(item => ({
+                            ...item,
+                            name: item.type,
+                            category: item.type,
+                            color: '',  // Add default values for required fields
+                          })));
                           setShowNewEvent(false);
                         }}
                         className="flex-1"
@@ -408,7 +539,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </form>
             </CardContent>
           </Card>
-        ) : recommendation && (
+        ) : recommendation.length > 0 && (
           <div className="space-y-6">
             <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
               <CardHeader>
@@ -421,16 +552,16 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <p className={styles.secondaryText}>{recommendation.recommendation.description}</p>
+                  <p className={styles.secondaryText}>{recommendation.map(item => item.styling_notes).join('\n')}</p>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {recommendation.recommendation.items.map((item: any, index: number) => (
+                    {recommendation.map((item, index) => (
                       <div key={index} className="space-y-2">
                         {item.image_url && (
                           <div className="aspect-square relative rounded-lg overflow-hidden">
                             <Image
                               src={item.image_url}
-                              alt={item.type || 'Wardrobe item'}
+                              alt={item.name}
                               fill
                               className="object-cover"
                             />
@@ -444,18 +575,22 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   <div className="space-y-2">
                     <h4 className={`font-semibold ${styles.primaryText}`}>Styling Tips:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      {recommendation.recommendation.styling_tips.map((tip: string, index: number) => (
-                        <li key={index} className={styles.secondaryText}>{tip}</li>
-                      ))}
+                      {recommendation
+                        .map(item => item.styling_tips)
+                        .flat()
+                        .filter((tip): tip is string => tip !== undefined)
+                        .map((tip, index) => (
+                          <li key={index} className={styles.secondaryText}>{tip}</li>
+                        ))}
                     </ul>
                   </div>
                 </div>
 
-                {user?.avatar_url && recommendation.recommendation.items[0]?.image_url && (
+                {user?.avatar_url && recommendation[0]?.image_url && (
                   <CardContent className="pt-4 border-t border-[#347928]/20">
                     <OutfitTryOn
                       userId={userId}
-                      outfitImageUrl={recommendation.recommendation.items[0].image_url}
+                      outfitImageUrl={recommendation[0].image_url}
                       userImageUrl={user.avatar_url}
                     />
                   </CardContent>
@@ -466,10 +601,62 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
             {showChat && (
               <OutfitChat 
                 userId={userId} 
-                outfitId={recommendation.id}
-                outfitDetails={recommendation.recommendation}
+                outfitId={recommendation[0].id}
+                outfitDetails={recommendation.map(item => ({
+                  ...item,
+                  styling_notes: item.styling_notes || '',
+                  styling_tips: item.styling_tips || []
+                }))}
               />
             )}
+          </div>
+        )}
+
+        <Button
+          onClick={generateRecommendation}
+          className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            'Generate Outfit'
+          )}
+        </Button>
+
+        {recommendation.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recommendation.map((item, index) => (
+              <div key={index} className={`${styles.glassmorph} p-4 rounded-lg`}>
+                {item.image_url && (
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="w-full h-48 object-cover rounded-md mb-2"
+                  />
+                )}
+                <h3 className="font-semibold">{item.name}</h3>
+                <p className="text-sm text-gray-400">{item.category}</p>
+                
+                {item.isStoreItem && (
+                  <div className="mt-2 flex justify-between items-center">
+                    <span className="text-[#347928] font-bold">${item.price}</span>
+                    <Link href={`/store/product/${item.id}`}>
+                      <Button
+                        size="sm"
+                        className="bg-[#347928] hover:bg-[#347928]/80"
+                      >
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        Buy Now
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
