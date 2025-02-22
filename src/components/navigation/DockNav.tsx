@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Shirt, ShoppingBag, Home } from 'lucide-react';
+import { Shirt, ShoppingBag, Home, Store } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import { ProfileDropdown } from '../layout/ProfileDropdown';
 import { Button } from '../ui/button';
@@ -96,6 +96,10 @@ export const DockNav = () => {
                     </NavItem>
 
                     <NavItem href="/store" isActive={pathname.includes('/store')}>
+                        <Store className="w-5 h-5 text-[#FFFDEC]" />
+                    </NavItem>
+
+                    <NavItem href="/cart" isActive={pathname.includes('/cart')}>
                         <ShoppingBag className="w-5 h-5 text-[#FFFDEC]" />
                     </NavItem>
 
