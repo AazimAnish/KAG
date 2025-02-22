@@ -20,15 +20,29 @@ export default function StorePage() {
   }, []);
 
   const loadProducts = async () => {
+    console.log('Starting to fetch products...');
+    const startTime = Date.now();
+    
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      console.log('Fetching products from Supabase...');
+      
+      const { data, error, count } = await supabase
         .from('products')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log(`Successfully fetched ${count} products in ${Date.now() - startTime}ms`);
+      console.log('First product:', data?.[0]);
+      
       setProducts(data || []);
     } catch (error) {
+      console.error('Failed to load products:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -36,13 +50,24 @@ export default function StorePage() {
       });
     } finally {
       setLoading(false);
+      console.log(`Total load time: ${Date.now() - startTime}ms`);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#347928]" />
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-[#347928] mb-4" />
+        <p className="text-sm text-gray-500">Loading products...</p>
+      </div>
+    );
+  }
+
+  if (!products.length) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <h1 className={`text-3xl font-bold mb-8 ${styles.primaryText}`}>Store</h1>
+        <p className="text-center text-gray-500">No products available.</p>
       </div>
     );
   }
