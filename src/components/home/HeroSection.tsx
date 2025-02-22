@@ -36,7 +36,7 @@ export const HeroSection = () => {
               <span className={`${styles.heading} block`}>
                 Wardrobe
               </span>
-              <span className={`${styles.kagaiFont} ${styles.gradientText}`}>Effortlessly</span>
+              <span className={`${styles.kagaiFont} ${styles.gradientText} pl-1`}>Effortlessly</span>
             </h1>
             <p className={`${styles.secondaryFont} text-xl ${styles.secondaryText} leading-relaxed`}>
               Your personal stylist, powered by 

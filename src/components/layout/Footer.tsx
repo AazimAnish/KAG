@@ -9,7 +9,7 @@ export const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-4 gap-8">
           <div>
-            <h3 className={`text-xl font-bold mb-4 ${styles.primaryText}`}>Chic AI</h3>
+            <h3 className={`text-xl font-bold mb-4 ${styles.primaryText}`}>KAG AI</h3>
             <p className={styles.secondaryText}>
               Redefining personal styling with the power of AI
             </p>

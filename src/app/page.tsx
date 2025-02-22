@@ -10,19 +10,21 @@ import { styles } from '@/utils/constants';
 
 const LandingPage = () => {
   return (
-    <div className={`min-h-screen ${styles.darkBg} ${styles.primaryText} font-candal`}>
-      {/* Background */}
-      <div className="fixed inset-0 z-0 opacity-20">
-        <div className="absolute inset-0 bg-[url('/patterns/greek-pattern.png')] animate-slide-slow"></div>
+    <div className={`min-h-screen ${styles.darkBg} ${styles.overlay} ${styles.primaryText} font-candal transition-all duration-300`}>
+      {/* Greek pattern overlay */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-[url('/patterns/greek-pattern.png')] opacity-20 animate-slide-slow"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10">
-        {/* <Navbar /> */}
         <main>
           <HeroSection />
-          <HowItWorksSection />
-          <FeaturesSection />
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 dark:to-black/30" />
+            <HowItWorksSection />
+            <FeaturesSection />
+          </div>
         </main>
         <Footer />
       </div>

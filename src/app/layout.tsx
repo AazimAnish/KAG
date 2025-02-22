@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { DockNav } from "@/components/navigation/DockNav";
 import { ThemeProvider } from "@/components/theme/ThemeProvider"
 import { Candal, Sriracha, Satisfy } from "next/font/google";
+import { styles } from "@/utils/constants";
 
 const candal = Candal({
   weight: '400',
@@ -36,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${candal.variable} ${sriracha.variable} ${satisfy.variable} font-sriracha antialiased min-h-screen bg-[#F2F6D0] dark:bg-[#443627]`}>
+      <body className={`${candal.variable} ${sriracha.variable} ${satisfy.variable} font-sriracha antialiased min-h-screen ${styles.darkBg} ${styles.overlay}`}>
         <ThemeProvider>
           <DockNav />
           <main className="min-h-screen">
