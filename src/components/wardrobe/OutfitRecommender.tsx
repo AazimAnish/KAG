@@ -36,6 +36,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { OutfitTryOn } from './OutfitTryOn';
+import { User } from '@/types/auth';
 
 interface OutfitRecommenderProps {
   userId: string;
@@ -56,10 +58,12 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [error, setError] = useState<string | null>(null);
   const [showNewEvent, setShowNewEvent] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadPastSuggestions();
     loadEvents();
+    loadUser();
   }, [userId]);
 
   const loadPastSuggestions = async () => {
@@ -86,6 +90,26 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
     if (data) {
       setEvents(data);
+    }
+  };
+
+  const loadUser = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (data) {
+      setUser({
+        id: data.id,
+        email: '', // You might want to get this from auth.getUser()
+        name: data.name,
+        avatar_url: data.avatar_url,
+        gender: data.gender,
+        bodyType: data.body_type,
+        measurements: data.measurements,
+      });
     }
   };
 
@@ -426,6 +450,16 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                     </ul>
                   </div>
                 </div>
+
+                {user?.avatar_url && recommendation.recommendation.items[0]?.image_url && (
+                  <CardContent className="pt-4 border-t border-[#347928]/20">
+                    <OutfitTryOn
+                      userId={userId}
+                      outfitImageUrl={recommendation.recommendation.items[0].image_url}
+                      userImageUrl={user.avatar_url}
+                    />
+                  </CardContent>
+                )}
               </CardContent>
             </Card>
 
