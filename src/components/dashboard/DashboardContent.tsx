@@ -24,7 +24,7 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
   return (
     <main className="container mx-auto px-4 pt-24">
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
           <CardHeader>
             <CardTitle className={styles.primaryText}>Profile</CardTitle>
           </CardHeader>
@@ -37,7 +37,7 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
                       src={user.avatar_url}
                       alt={user.name || 'Profile'}
                       fill
-                      className="rounded-full object-cover border-2 border-[#347928]/30"
+                      className="rounded-full object-cover border-2 border-[#D98324 ]/30"
                     />
                   </div>
                 </div>
@@ -50,7 +50,7 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
           </CardContent>
         </Card>
 
-        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
           <CardHeader>
             <CardTitle className={styles.primaryText}>Measurements</CardTitle>
           </CardHeader>
@@ -65,7 +65,7 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
           </CardContent>
         </Card>
 
-        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
           <CardHeader>
             <CardTitle className={styles.primaryText}>Style Preferences</CardTitle>
           </CardHeader>

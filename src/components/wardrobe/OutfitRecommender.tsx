@@ -384,7 +384,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
     <div className="grid md:grid-cols-[300px,1fr] gap-6">
       {/* Past Suggestions Sidebar */}
       <div className="col-span-1">
-        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+        <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className={styles.primaryText}>Past Events</CardTitle>
@@ -392,7 +392,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowNewEvent(true)}
-                className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+                className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
               >
                 New Event
               </Button>
@@ -405,8 +405,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   <div
                     key={suggestion.id}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${recommendation.length === 1 && recommendation[0].id === suggestion.id
-                      ? 'bg-[#347928]/20'
-                      : 'hover:bg-[#347928]/10'
+                      ? 'bg-[#D98324 ]/20'
+                      : 'hover:bg-[#D98324 ]/10'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -440,7 +440,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className={`${styles.glassmorph} border-[#347928]/30`}>
+                        <AlertDialogContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
                           <AlertDialogHeader>
                             <AlertDialogTitle className={styles.primaryText}>
                               Delete Outfit Suggestion
@@ -451,7 +451,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel className={`${styles.glassmorph} hover:bg-[#347928]/20`}>
+                            <AlertDialogCancel className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}>
                               Cancel
                             </AlertDialogCancel>
                             <AlertDialogAction
@@ -481,7 +481,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         )}
 
         {showNewEvent ? (
-          <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+          <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
             <CardHeader>
               <CardTitle className={styles.primaryText}>New Event Outfit</CardTitle>
               <CardDescription className={styles.secondaryText}>
@@ -494,7 +494,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   placeholder="Event Title"
                   value={eventDetails.title}
                   onChange={(e) => setEventDetails(prev => ({ ...prev, title: e.target.value }))}
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                   required
                 />
 
@@ -502,7 +502,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   placeholder="Describe your event..."
                   value={eventDetails.description}
                   onChange={(e) => setEventDetails(prev => ({ ...prev, description: e.target.value }))}
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                   required
                 />
 
@@ -510,7 +510,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   value={eventDetails.event_type}
                   onValueChange={(value) => setEventDetails(prev => ({ ...prev, event_type: value }))}
                 >
-                  <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+                  <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
                     <SelectValue placeholder="Event Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -526,13 +526,13 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                   type="date"
                   value={eventDetails.date}
                   onChange={(e) => setEventDetails(prev => ({ ...prev, date: e.target.value }))}
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
 
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+                  className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
                 >
                   {loading ? "Generating..." : "Get Recommendations"}
                 </Button>
@@ -541,7 +541,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
           </Card>
         ) : recommendation.length > 0 && (
           <div className="space-y-6">
-            <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+            <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
               <CardHeader>
                 <CardTitle className={styles.primaryText}>Your Perfect Outfit</CardTitle>
                 {showChat && (
@@ -587,7 +587,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 </div>
 
                 {user?.avatar_url && recommendation[0]?.image_url && (
-                  <CardContent className="pt-4 border-t border-[#347928]/20">
+                  <CardContent className="pt-4 border-t border-[#D98324 ]/20">
                     <OutfitTryOn
                       userId={userId}
                       outfitImageUrl={recommendation[0].image_url}
@@ -614,7 +614,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
         <Button
           onClick={generateRecommendation}
-          className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+          className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
           disabled={loading}
         >
           {loading ? (
@@ -643,11 +643,11 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 
                 {item.isStoreItem && (
                   <div className="mt-2 flex justify-between items-center">
-                    <span className="text-[#347928] font-bold">${item.price}</span>
+                    <span className="text-[#D98324 ] font-bold">${item.price}</span>
                     <Link href={`/store/product/${item.id}`}>
                       <Button
                         size="sm"
-                        className="bg-[#347928] hover:bg-[#347928]/80"
+                        className="bg-[#D98324] hover:bg-[#D98324]/80"
                       >
                         <ShoppingBag className="h-4 w-4 mr-2" />
                         Buy Now

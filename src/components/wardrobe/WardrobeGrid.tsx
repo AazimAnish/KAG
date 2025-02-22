@@ -74,7 +74,7 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
         {items.map((item) => (
           <Card 
             key={item.id}
-            className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}
+            className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}
           >
             <CardHeader>
               <CardTitle className={`text-sm ${styles.primaryText}`}>
@@ -94,7 +94,7 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
                 {item.tags.map((tag, index) => (
                   <span
                     key={index}
-                    className="text-xs px-2 py-1 rounded-full bg-[#347928]/20 text-[#FFFDEC]"
+                    className="text-xs px-2 py-1 rounded-full bg-[#D98324 ]/20 text-[#FFFDEC]"
                   >
                     {tag}
                   </span>

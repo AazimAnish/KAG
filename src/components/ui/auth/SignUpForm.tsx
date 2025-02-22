@@ -250,8 +250,8 @@ export const SignUpForm = () => {
           <label className={styles.primaryText}>Profile Picture</label>
           <div
             {...getRootProps()}
-            className={`${styles.glassmorph} border-2 border-dashed border-[#347928]/30 
-              rounded-lg p-4 text-center cursor-pointer hover:border-[#347928]/50 transition-colors`}
+            className={`${styles.glassmorph} border-2 border-dashed border-[#D98324 ]/30 
+              rounded-lg p-4 text-center cursor-pointer hover:border-[#D98324 ]/50 transition-colors`}
           >
             <input {...getInputProps()} />
             {avatarUrl ? (
@@ -280,7 +280,7 @@ export const SignUpForm = () => {
               <FormControl>
                 <Input
                   {...field}
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
               </FormControl>
               <FormMessage />
@@ -298,7 +298,7 @@ export const SignUpForm = () => {
                 <Input
                   {...field}
                   type="email"
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
               </FormControl>
               <FormMessage />
@@ -316,7 +316,7 @@ export const SignUpForm = () => {
                 <Input
                   {...field}
                   type="password"
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
               </FormControl>
               <FormMessage />
@@ -333,7 +333,7 @@ export const SignUpForm = () => {
                 <FormLabel className={styles.primaryText}>Gender</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+                    <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                   </FormControl>
@@ -356,7 +356,7 @@ export const SignUpForm = () => {
                 <FormLabel className={styles.primaryText}>Body Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+                    <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
                       <SelectValue placeholder="Select body type" />
                     </SelectTrigger>
                   </FormControl>
@@ -392,7 +392,7 @@ export const SignUpForm = () => {
                         type="number"
                         value={value?.toString() || ''}
                         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-                        className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                        className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                         placeholder={measurementHints[measurement]}
                       />
                     </FormControl>
@@ -409,7 +409,7 @@ export const SignUpForm = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+          className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
           disabled={isLoading}
         >
           {isLoading ? "Creating account..." : "Sign Up"}
@@ -423,7 +423,7 @@ export const SignUpForm = () => {
 
         <p className={`text-center ${styles.secondaryText}`}>
           Already have an account?{" "}
-          <Link href="/signin" className="text-[#347928] hover:underline">
+          <Link href="/signin" className="text-[#D98324 ] hover:underline">
             Sign In
           </Link>
         </p>

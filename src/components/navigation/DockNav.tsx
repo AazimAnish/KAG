@@ -10,6 +10,7 @@ import { ProfileDropdown } from '../layout/ProfileDropdown';
 import { Button } from '../ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { User } from '@/types/auth';
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface NavItemProps {
     href: string;
@@ -33,7 +34,7 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                         relative px-4 py-2 
                         rounded-full 
                         transition-colors
-                        ${isActive ? 'bg-[#347928]/20' : 'hover:bg-[#347928]/20'}
+                        ${isActive ? 'bg-[#D98324]/20' : 'hover:bg-[#D98324]/20'}
                     `}
                     whileHover={{ scale: 1.4 }}
                     whileTap={{ scale: 0.95 }}
@@ -44,7 +45,7 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                 <AnimatePresence>
                     {isHovered && (
                         <motion.span
-                            className="absolute top-full mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap"
+                            className="absolute top-full mt-2 px-2 py-1 bg-[#443627]/80 text-[#EFDCAB] text-xs rounded whitespace-nowrap"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
@@ -95,11 +96,11 @@ export const DockNav = () => {
     }, []);
 
     const navItems: NavItemProps[] = [
-        { href: '/', icon: <Home className="w-5 h-5 text-[#FFFDEC]" />, label: 'Home', isActive: pathname === '/' },
-        { href: '/dashboard/wardrobe', icon: <Shirt className="w-5 h-5 text-[#FFFDEC]" />, label: 'Wardrobe', isActive: pathname.includes('/wardrobe') },
-        { href: '/store', icon: <Store className="w-5 h-5 text-[#FFFDEC]" />, label: 'Store', isActive: pathname.includes('/store') },
-        { href: '/dashboard/kag-ai', icon: <Wand2 className="w-5 h-5 text-[#FFFDEC]" />, label: 'KAG-AI', isActive: pathname.includes('/kag-ai') },
-        { href: '/cart', icon: <ShoppingBag className="w-5 h-5 text-[#FFFDEC]" />, label: 'Cart', isActive: pathname.includes('/cart') },
+        { href: '/', icon: <Home className="w-5 h-5 text-[#EFDCAB]" />, label: 'Home', isActive: pathname === '/' },
+        { href: '/dashboard/wardrobe', icon: <Shirt className="w-5 h-5 text-[#EFDCAB]" />, label: 'Wardrobe', isActive: pathname.includes('/wardrobe') },
+        { href: '/store', icon: <Store className="w-5 h-5 text-[#EFDCAB]" />, label: 'Store', isActive: pathname.includes('/store') },
+        { href: '/dashboard/kag-ai', icon: <Wand2 className="w-5 h-5 text-[#EFDCAB]" />, label: 'KAG-AI', isActive: pathname.includes('/kag-ai') },
+        { href: '/cart', icon: <ShoppingBag className="w-5 h-5 text-[#EFDCAB]" />, label: 'Cart', isActive: pathname.includes('/cart') },
     ];
 
     return (
@@ -108,10 +109,14 @@ export const DockNav = () => {
                 KAG
             </Link>
 
+            <div className="absolute right-4">
+                <ThemeToggle />
+            </div>
+
             <motion.nav
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
-                className="inline-flex"
+                className="inline-flex mx-auto"
             >
                 <div className={`
                     ${styles.glassmorph} 
@@ -119,14 +124,14 @@ export const DockNav = () => {
                     rounded-full 
                     flex items-center gap-4
                     backdrop-blur-md
-                    border border-[#347928]/20
+                    border border-[#D98324]/20
                     shadow-lg
                 `}>
                     {navItems.map((item, index) => (
                         <div key={item.href} className="flex items-center">
                             <NavItem {...item} />
                             {index < navItems.length - 1 && (
-                                <div className="w-px h-6 bg-[#347928]/20" />
+                                <div className="w-px h-6 bg-[#D98324]/20" />
                             )}
                         </div>
                     ))}
@@ -138,14 +143,14 @@ export const DockNav = () => {
                             <Link href="/signin">
                                 <Button
                                     variant="ghost"
-                                    className="text-[#FFFDEC] hover:bg-[#347928]/20"
+                                    className="text-[#EFDCAB] hover:bg-[#D98324]/20"
                                 >
                                     Sign In
                                 </Button>
                             </Link>
                             <Link href="/signup">
                                 <Button
-                                    className="bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+                                    className="bg-[#D98324] hover:bg-[#D98324]/80 text-[#F2F6D0]"
                                 >
                                     Sign Up
                                 </Button>

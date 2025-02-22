@@ -250,7 +250,7 @@ export const ProductManagement = () => {
         <h2 className={`text-2xl font-bold ${styles.primaryText}`}>Product Management</h2>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="bg-[#347928] hover:bg-[#347928]/80">
+            <Button className="bg-[#D98324 ] hover:bg-[#D98324 ]/80">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -324,7 +324,7 @@ export const ProductManagement = () => {
                 onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
                 required
               />
-              <Button type="submit" className="w-full bg-[#347928] hover:bg-[#347928]/80">
+              <Button type="submit" className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80">
                 {uploading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -356,7 +356,7 @@ export const ProductManagement = () => {
               <TableCell>
                 <Button
                   variant="outline"
-                  className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
                   onClick={() => {/* Add edit functionality */}}
                 >
                   Edit

@@ -26,10 +26,10 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-[#347928]/30 bg-[#1A1A19]/80 backdrop-blur-lg text-[#FFFDEC]",
+        default: "border-[#D98324]/30 bg-[#443627]/80 backdrop-blur-lg text-[#EFDCAB]",
         destructive:
           "destructive group border-red-500/30 bg-red-500/10 text-red-500 backdrop-blur-lg",
-        success: "border-[#347928]/30 bg-[#347928]/10 text-[#FFFDEC] backdrop-blur-lg",
+        success: "border-[#D98324]/30 bg-[#D98324]/10 text-[#EFDCAB] backdrop-blur-lg",
       },
     },
     defaultVariants: {
@@ -60,7 +60,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#347928]/30 bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-[#347928]/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-red-500/30 group-[.destructive]:hover:bg-red-500/20 group-[.destructive]:hover:text-red-500 group-[.destructive]:focus:ring-red-500",
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#D98324 ]/30 bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-[#D98324 ]/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-red-500/30 group-[.destructive]:hover:bg-red-500/20 group-[.destructive]:hover:text-red-500 group-[.destructive]:focus:ring-red-500",
       className
     )}
     {...props}

@@ -63,7 +63,7 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="outline-none">
-        <Avatar className="h-8 w-8 border-2 border-[#347928]/30 hover:border-[#347928]/50 transition-colors">
+        <Avatar className="h-8 w-8 border-2 border-[#D98324 ]/30 hover:border-[#D98324 ]/50 transition-colors">
           {user.avatar_url ? (
             <AvatarImage src={user.avatar_url} alt={user.name || 'User'} />
           ) : (
@@ -73,29 +73,29 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
           )}
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className={`${styles.glassmorph} border-[#347928]/30`}>
+      <DropdownMenuContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
         <div className="px-2 py-1.5 text-sm text-[#FFFDEC]/70">
           {user.email}
         </div>
-        <DropdownMenuSeparator className="bg-[#347928]/20" />
+        <DropdownMenuSeparator className="bg-[#D98324 ]/20" />
         <DropdownMenuItem 
           onClick={handleProfile}
-          className="text-[#FFFDEC] cursor-pointer hover:bg-[#347928]/20 gap-2"
+          className="text-[#FFFDEC] cursor-pointer hover:bg-[#D98324 ]/20 gap-2"
         >
           <UserIcon className="w-4 h-4" />
           Profile
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={handleSettings}
-          className="text-[#FFFDEC] cursor-pointer hover:bg-[#347928]/20 gap-2"
+          className="text-[#FFFDEC] cursor-pointer hover:bg-[#D98324 ]/20 gap-2"
         >
           <Settings className="w-4 h-4" />
           Settings
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-[#347928]/20" />
+        <DropdownMenuSeparator className="bg-[#D98324 ]/20" />
         <DropdownMenuItem 
           onClick={handleLogout}
-          className="text-[#FFFDEC] cursor-pointer hover:bg-[#347928]/20 gap-2"
+          className="text-[#FFFDEC] cursor-pointer hover:bg-[#D98324 ]/20 gap-2"
         >
           <LogOut className="w-4 h-4" />
           Logout
