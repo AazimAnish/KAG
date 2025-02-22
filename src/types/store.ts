@@ -3,10 +3,14 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  images: string[];
+  size: string;
+  color: string;
   category: string;
-  sizes: string[];
-  colors: string[];
+  gender: string;
+  style: string;
+  pattern: string;
+  fit: string;
+  images: string[];
   stock: number;
   created_at: string;
 }
