@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Grid2X2, Plus, Filter, Wand2 } from "lucide-react";
+import { Grid2X2, Plus, Filter } from "lucide-react";
 import { styles } from "@/utils/constants";
 
 interface WardrobeNavProps {
-  view: 'grid' | 'upload' | 'recommend';
-  onViewChange: (view: 'grid' | 'upload' | 'recommend') => void;
+  view: 'grid' | 'upload';
+  onViewChange: (view: 'grid' | 'upload') => void;
   onToggleFilters: () => void;
   showFilters: boolean;
 }
@@ -38,14 +38,6 @@ export const WardrobeNav = ({ view, onViewChange, onToggleFilters, showFilters }
           className={`${styles.glassmorph} hover:bg-[#347928]/20 ${view === 'upload' ? 'bg-[#347928]/20' : ''}`}
         >
           <Plus className="h-5 w-5 text-[#FFFDEC]" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onViewChange('recommend')}
-          className={`${styles.glassmorph} hover:bg-[#347928]/20 ${view === 'recommend' ? 'bg-[#347928]/20' : ''}`}
-        >
-          <Wand2 className="h-5 w-5 text-[#FFFDEC]" />
         </Button>
       </div>
     </div>
