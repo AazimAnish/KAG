@@ -142,7 +142,7 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
   });
 
   return (
-    <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+    <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
       <CardHeader>
         <CardTitle className={styles.primaryText}>Add New Items</CardTitle>
         <CardDescription className={styles.secondaryText}>
@@ -153,13 +153,13 @@ export const WardrobeUpload = ({ userId, onSuccess }: WardrobeUploadProps) => {
         <div
           {...getRootProps()}
           className={`
-            border-2 border-dashed border-[#347928]/30 rounded-lg p-8
-            text-center cursor-pointer hover:border-[#347928]/50 transition-colors
-            ${isDragActive ? 'border-[#347928]' : ''}
+            border-2 border-dashed border-[#D98324 ]/30 rounded-lg p-8
+            text-center cursor-pointer hover:border-[#D98324 ]/50 transition-colors
+            ${isDragActive ? 'border-[#D98324 ]' : ''}
           `}
         >
           <input {...getInputProps()} />
-          <Upload className="w-12 h-12 text-[#347928] mx-auto mb-4" />
+          <Upload className="w-12 h-12 text-[#D98324 ] mx-auto mb-4" />
           <p className={styles.primaryText}>
             {uploading 
               ? 'Uploading...' 

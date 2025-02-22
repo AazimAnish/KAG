@@ -1,12 +1,19 @@
 export const styles = {
-  glassmorph: "backdrop-filter backdrop-blur-lg bg-opacity-10 bg-[#1A1A19]",
-  greekPattern: "border-double border-4 border-[#347928]/30",
-  neonGlow: "shadow-[0_0_15px_rgba(52,121,40,0.1)]",
-  gradientText: "bg-gradient-to-r from-[#FFFDEC] to-[#347928] bg-clip-text text-transparent",
-  primaryText: "text-[#FFFDEC]",
-  secondaryText: "text-[#FFFDEC]/80",
-  accentText: "text-[#347928]",
-  darkBg: "bg-[#1A1A19]",
+  primaryText: "text-[#443627] dark:text-[#EFDCAB]",
+  secondaryText: "text-[#443627]/80 dark:text-[#EFDCAB]/80 font-semibold",
+  accentText: "text-[#D98324]",
+  darkBg: "bg-[#F2F6D0] dark:bg-[#443627]",
+  glassmorph: "bg-[#EFDCAB]/10 dark:bg-[#443627]/50 backdrop-blur-lg",
+  greekPattern: "border border-[#D98324]/30",
+  neonGlow: "shadow-[0_0_15px_rgba(217,131,36,0.1)]",
+  gradientText: "bg-gradient-to-r from-[#EFDCAB] to-[#D98324] bg-clip-text text-transparent",
+  primaryFont: "font-candal tracking-wide",
+  secondaryFont: "font-sriracha",
+  kagaiFont: "font-satisfy font-bold",
+  heading: "font-candal tracking-wide text-[#443627] dark:text-[#EFDCAB]",
+  subheading: "font-sriracha font-medium",
+  bodyText: "font-sriracha text-base",
+  kagaiText: "font-satisfy text-[#D98324]",
 };
 
 export const navigationLinks = [

@@ -57,7 +57,7 @@ export default function StorePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#347928] mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#D98324 ] mb-4" />
         <p className="text-sm text-gray-500">Loading products...</p>
       </div>
     );
@@ -92,7 +92,7 @@ export default function StorePage() {
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-[#347928]">
+                  <span className="text-lg font-bold text-[#D98324 ]">
                     ${product.price.toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500">
@@ -108,7 +108,7 @@ export default function StorePage() {
             </CardContent>
             <CardFooter className="p-4 pt-0">
               <Button 
-                className="w-full bg-[#347928] hover:bg-[#347928]/80"
+                className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80"
                 onClick={() => {
                   // Add to cart functionality
                   toast({

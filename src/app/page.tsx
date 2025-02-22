@@ -10,7 +10,7 @@ import { styles } from '@/utils/constants';
 
 const LandingPage = () => {
   return (
-    <div className={`min-h-screen ${styles.darkBg} ${styles.primaryText} font-['Cinzel']`}>
+    <div className={`min-h-screen ${styles.darkBg} ${styles.primaryText} font-candal`}>
       {/* Background */}
       <div className="fixed inset-0 z-0 opacity-20">
         <div className="absolute inset-0 bg-[url('/patterns/greek-pattern.png')] animate-slide-slow"></div>

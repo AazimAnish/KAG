@@ -3,21 +3,26 @@ import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster"
 import { DockNav } from "@/components/navigation/DockNav";
+import { ThemeProvider } from "@/components/theme/ThemeProvider"
+import { Candal, Sriracha, Satisfy } from "next/font/google";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const candal = Candal({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-candal',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const sriracha = Sriracha({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-sriracha',
 });
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ['latin']
-})
+const satisfy = Satisfy({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-satisfy',
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -30,13 +35,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased min-h-screen`}>
-        <DockNav />
-        <main className="min-h-screen bg-[#1A1A19]">
-          {children}
-        </main>
-        <Toaster />
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${candal.variable} ${sriracha.variable} ${satisfy.variable} font-sriracha antialiased min-h-screen bg-[#F2F6D0] dark:bg-[#443627]`}>
+        <ThemeProvider>
+          <DockNav />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

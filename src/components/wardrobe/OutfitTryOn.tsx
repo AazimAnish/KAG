@@ -51,7 +51,7 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
       <Button
         onClick={generateTryOn}
         disabled={loading}
-        className={`w-full ${styles.glassmorph} hover:bg-[#347928]/20`}
+        className={`w-full ${styles.glassmorph} hover:bg-[#D98324 ]/20`}
       >
         {loading ? (
           <>

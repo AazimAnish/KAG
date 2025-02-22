@@ -36,18 +36,18 @@ export const WardrobeFilter = ({ onFilterChange }: WardrobeFilterProps) => {
         value={filters.type}
         onValueChange={(value) => handleFilterChange('type', value)}
       >
-        <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+        <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
           <SelectValue placeholder="Filter by Type" />
         </SelectTrigger>
-        <SelectContent className={`${styles.glassmorph} border-[#347928]/30`}>
-          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#347928]/20">
+        <SelectContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
+          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#D98324 ]/20">
             All Types
           </SelectItem>
           {WARDROBE_CATEGORIES.types.map((type) => (
             <SelectItem 
               key={type} 
               value={type}
-              className="text-[#FFFDEC] hover:bg-[#347928]/20"
+              className="text-[#FFFDEC] hover:bg-[#D98324 ]/20"
             >
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </SelectItem>
@@ -59,18 +59,18 @@ export const WardrobeFilter = ({ onFilterChange }: WardrobeFilterProps) => {
         value={filters.style}
         onValueChange={(value) => handleFilterChange('style', value)}
       >
-        <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+        <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
           <SelectValue placeholder="Filter by Style" />
         </SelectTrigger>
-        <SelectContent className={`${styles.glassmorph} border-[#347928]/30`}>
-          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#347928]/20">
+        <SelectContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
+          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#D98324 ]/20">
             All Styles
           </SelectItem>
           {WARDROBE_CATEGORIES.styles.map((style) => (
             <SelectItem 
               key={style} 
               value={style}
-              className="text-[#FFFDEC] hover:bg-[#347928]/20"
+              className="text-[#FFFDEC] hover:bg-[#D98324 ]/20"
             >
               {style.charAt(0).toUpperCase() + style.slice(1)}
             </SelectItem>
@@ -82,18 +82,18 @@ export const WardrobeFilter = ({ onFilterChange }: WardrobeFilterProps) => {
         value={filters.fit}
         onValueChange={(value) => handleFilterChange('fit', value)}
       >
-        <SelectTrigger className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}>
+        <SelectTrigger className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}>
           <SelectValue placeholder="Filter by Fit" />
         </SelectTrigger>
-        <SelectContent className={`${styles.glassmorph} border-[#347928]/30`}>
-          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#347928]/20">
+        <SelectContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
+          <SelectItem value="all" className="text-[#FFFDEC] hover:bg-[#D98324 ]/20">
             All Fits
           </SelectItem>
           {WARDROBE_CATEGORIES.fits.map((fit) => (
             <SelectItem 
               key={fit} 
               value={fit}
-              className="text-[#FFFDEC] hover:bg-[#347928]/20"
+              className="text-[#FFFDEC] hover:bg-[#D98324 ]/20"
             >
               {fit.charAt(0).toUpperCase() + fit.slice(1)}
             </SelectItem>

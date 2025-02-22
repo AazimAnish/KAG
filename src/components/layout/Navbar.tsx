@@ -13,7 +13,7 @@ import { LogOut } from 'lucide-react';
 export const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link 
     href={href} 
-    className={`text-[#FFFDEC] hover:text-[#347928] transition-colors`}
+    className={`text-[#FFFDEC] hover:text-[#D98324 ] transition-colors`}
   >
     {children}
   </Link>
@@ -116,7 +116,7 @@ export const Navbar = () => {
                 <Button
                   onClick={handleSignOut}
                   variant="ghost"
-                  className={`${styles.glassmorph} hover:bg-[#347928]/20 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 text-[#FFFDEC]`}
                 >
                   <LogOut className="h-5 w-5 mr-2" />
                   Sign Out
@@ -130,14 +130,14 @@ export const Navbar = () => {
                 <NavLink href="/#about">About</NavLink>
                 <Link href="/signin">
                   <Button 
-                    className={`${styles.glassmorph} hover:bg-[#347928]/20 text-[#FFFDEC]`}
+                    className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 text-[#FFFDEC]`}
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button 
-                    className="bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+                    className="bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
                   >
                     Sign Up
                   </Button>

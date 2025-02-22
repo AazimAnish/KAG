@@ -19,25 +19,25 @@ export const WardrobeNav = ({ view, onViewChange, onToggleFilters, showFilters }
           variant="ghost"
           size="icon"
           onClick={() => onToggleFilters()}
-          className={`${styles.glassmorph} hover:bg-[#347928]/20 ${showFilters ? 'bg-[#347928]/20' : ''}`}
+          className={`${styles.glassmorph} hover:bg-[#D98324]/20 ${showFilters ? 'bg-[#D98324]/20' : ''}`}
         >
-          <Filter className="h-5 w-5 text-[#FFFDEC]" />
+          <Filter className="h-5 w-5 text-[#EFDCAB]" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onViewChange('grid')}
-          className={`${styles.glassmorph} hover:bg-[#347928]/20 ${view === 'grid' ? 'bg-[#347928]/20' : ''}`}
+          className={`${styles.glassmorph} hover:bg-[#D98324]/20 ${view === 'grid' ? 'bg-[#D98324]/20' : ''}`}
         >
-          <Grid2X2 className="h-5 w-5 text-[#FFFDEC]" />
+          <Grid2X2 className="h-5 w-5 text-[#EFDCAB]" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => onViewChange('upload')}
-          className={`${styles.glassmorph} hover:bg-[#347928]/20 ${view === 'upload' ? 'bg-[#347928]/20' : ''}`}
+          className={`${styles.glassmorph} hover:bg-[#D98324]/20 ${view === 'upload' ? 'bg-[#D98324]/20' : ''}`}
         >
-          <Plus className="h-5 w-5 text-[#FFFDEC]" />
+          <Plus className="h-5 w-5 text-[#EFDCAB]" />
         </Button>
       </div>
     </div>

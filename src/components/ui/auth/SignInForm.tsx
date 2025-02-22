@@ -73,7 +73,7 @@ export const SignInForm = () => {
                 <Input
                   {...field}
                   type="email"
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
               </FormControl>
               <FormMessage />
@@ -91,7 +91,7 @@ export const SignInForm = () => {
                 <Input
                   {...field}
                   type="password"
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                 />
               </FormControl>
               <FormMessage />
@@ -101,7 +101,7 @@ export const SignInForm = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#347928] hover:bg-[#347928]/80 text-[#FFFDEC]"
+          className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
           disabled={isLoading}
         >
           {isLoading ? "Signing in..." : "Sign In"}
@@ -115,7 +115,7 @@ export const SignInForm = () => {
 
         <p className={`text-center ${styles.secondaryText}`}>
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-[#347928] hover:underline">
+          <Link href="/signup" className="text-[#D98324 ] hover:underline">
             Sign Up
           </Link>
         </p>

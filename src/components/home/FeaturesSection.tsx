@@ -36,7 +36,7 @@ export const FeaturesSection = () => {
           {features.map((feature, index) => (
             <Card 
               key={index} 
-              className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}
+              className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}
             >
               <CardHeader>
                 <CardTitle className={styles.primaryText}>{feature.title}</CardTitle>

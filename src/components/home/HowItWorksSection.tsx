@@ -10,17 +10,17 @@ import {
 const steps = [
   {
     title: "Upload Your Wardrobe",
-    icon: <Upload className="w-12 h-12 text-[#347928]" />,
+    icon: <Upload className="w-12 h-12 text-[#D98324 ]" />,
     description: "Upload your clothes and measurements for personalized styling"
   },
   {
     title: "Specify the Occasion",
-    icon: <Calendar className="w-12 h-12 text-[#347928]" />,
+    icon: <Calendar className="w-12 h-12 text-[#D98324 ]" />,
     description: "Tell us where you're going and let AI do the magic"
   },
   {
     title: "Get Recommendations",
-    icon: <Sparkles className="w-12 h-12 text-[#347928]" />,
+    icon: <Sparkles className="w-12 h-12 text-[#D98324 ]" />,
     description: "Receive AI-curated outfits perfect for your event"
   }
 ];
@@ -36,7 +36,7 @@ export const HowItWorksSection = () => {
           {steps.map((step, index) => (
             <Card 
               key={index} 
-              className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}
+              className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}
             >
               <CardHeader>
                 <div className="mb-4">{step.icon}</div>

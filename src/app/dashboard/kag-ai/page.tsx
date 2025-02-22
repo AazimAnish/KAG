@@ -53,7 +53,7 @@ export default function KagAIPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#347928] mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#D98324] mb-4" />
         <p className="text-sm text-gray-500">Loading KAG-AI...</p>
       </div>
     );

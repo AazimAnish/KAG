@@ -179,7 +179,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
   };
 
   return (
-    <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#347928]/30`}>
+    <Card className={`${styles.glassmorph} ${styles.greekPattern} border-[#D98324 ]/30`}>
       <CardHeader className="space-y-1">
         <div className="flex items-center justify-between">
           <CardTitle className={styles.primaryText}>Chat with AI Stylist</CardTitle>
@@ -187,7 +187,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
             onClick={startNewChat}
             variant="ghost"
             size="sm"
-            className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+            className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
           >
             New Chat
           </Button>
@@ -199,7 +199,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
       <CardContent>
         <div className="grid grid-cols-4 gap-4" style={{ height: 'calc(60vh - 100px)' }}>
           {/* Chat History Sidebar */}
-          <div className="col-span-1 border-r border-[#347928]/20 pr-4 h-full">
+          <div className="col-span-1 border-r border-[#D98324 ]/20 pr-4 h-full">
             <ScrollArea className="h-full">
               <div className="space-y-2 pr-2">
                 {chats.map(chat => (
@@ -207,8 +207,8 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
                     key={chat.id}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
                       activeChatId === chat.id 
-                        ? 'bg-[#347928]/20' 
-                        : 'hover:bg-[#347928]/10'
+                        ? 'bg-[#D98324 ]/20' 
+                        : 'hover:bg-[#D98324 ]/10'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -234,7 +234,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent className={`${styles.glassmorph} border-[#347928]/30`}>
+                        <AlertDialogContent className={`${styles.glassmorph} border-[#D98324 ]/30`}>
                           <AlertDialogHeader>
                             <AlertDialogTitle className={styles.primaryText}>
                               Delete Chat History
@@ -245,7 +245,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel className={`${styles.glassmorph} hover:bg-[#347928]/20`}>
+                            <AlertDialogCancel className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}>
                               Cancel
                             </AlertDialogCancel>
                             <AlertDialogAction
@@ -272,7 +272,7 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] p-4 rounded-lg ${
                       msg.role === 'user' 
-                        ? 'bg-[#347928]/20 ml-auto' 
+                        ? 'bg-[#D98324 ]/20 ml-auto' 
                         : 'bg-[#1A1A19]/20'
                     }`}>
                       <p className={`${styles.secondaryText} text-sm`}>{msg.content}</p>
@@ -284,18 +284,18 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
             </ScrollArea>
 
             {/* Chat Input */}
-            <div className="border-t border-[#347928]/20 p-4">
+            <div className="border-t border-[#D98324 ]/20 p-4">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about your outfit..."
-                  className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                  className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
                   disabled={loading}
                 />
                 <Button 
                   type="submit" 
-                  className="bg-[#347928] hover:bg-[#347928]/80 px-6"
+                  className="bg-[#D98324 ] hover:bg-[#D98324 ]/80 px-6"
                   disabled={loading}
                 >
                   {loading ? "Sending..." : "Send"}

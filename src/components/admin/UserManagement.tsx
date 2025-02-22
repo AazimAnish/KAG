@@ -104,7 +104,7 @@ export const UserManagement = () => {
                 <Button
                   onClick={() => toggleRole(user.id, user.role)}
                   variant="outline"
-                  className={`${styles.glassmorph} hover:bg-[#347928]/20`}
+                  className={`${styles.glassmorph} hover:bg-[#D98324]/20`}
                 >
                   {user.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                 </Button>

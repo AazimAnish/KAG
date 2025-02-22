@@ -66,8 +66,8 @@ AI Wardrobe Assistant is an intelligent fashion assistant that helps users curat
 ### Installation Steps
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/AazimAnish/Chic-AI
-   cd Chic-AI
+   git clone https://github.com/AazimAnish/kag-ai
+   cd kag-ai
    ```
 2. **Install dependencies:**
    ```sh

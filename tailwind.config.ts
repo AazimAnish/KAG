@@ -68,10 +68,9 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		fontFamily: {
-  			cinzel: [
-  				'Cinzel',
-  				'serif'
-  			]
+  			candal: ['var(--font-candal)', 'sans-serif'],
+  			sriracha: ['var(--font-sriracha)', 'cursive'],
+  			satisfy: ['var(--font-satisfy)', 'cursive'],
   		},
   		animation: {
   			'slide-slow': 'slide 20s linear infinite'

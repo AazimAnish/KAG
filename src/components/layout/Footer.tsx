@@ -35,14 +35,14 @@ export const Footer = () => {
               <Input 
                 type="email" 
                 placeholder="Enter your email" 
-                className={`${styles.glassmorph} border-[#347928]/30 text-[#FFFDEC]`}
+                className={`${styles.glassmorph} border-[#D98324 ]/30 text-[#FFFDEC]`}
               />
-              <Button className="bg-[#347928] text-[#FFFDEC]">Subscribe</Button>
+              <Button className="bg-[#D98324 ] text-[#FFFDEC]">Subscribe</Button>
             </div>
             <div className="flex space-x-4 mt-4">
-              <Instagram className="w-6 h-6 text-[#347928]" />
-              <Twitter className="w-6 h-6 text-[#347928]" />
-              <Linkedin className="w-6 h-6 text-[#347928]" />
+              <Instagram className="w-6 h-6 text-[#D98324 ]" />
+              <Twitter className="w-6 h-6 text-[#D98324 ]" />
+              <Linkedin className="w-6 h-6 text-[#D98324 ]" />
             </div>
           </div>
         </div>
