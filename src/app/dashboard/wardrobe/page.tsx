@@ -9,14 +9,13 @@ import { WardrobeUpload } from '@/components/wardrobe/WardrobeUpload';
 import { WardrobeGrid } from '@/components/wardrobe/WardrobeGrid';
 import { WardrobeNav } from '@/components/wardrobe/WardrobeNav';
 import { styles } from '@/utils/constants';
-import { OutfitRecommender } from '@/components/wardrobe/OutfitRecommender';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function WardrobePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'grid' | 'upload' | 'recommend'>('grid');
+  const [view, setView] = useState<'grid' | 'upload'>('grid');
   const [showFilters, setShowFilters] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
@@ -123,7 +122,6 @@ export default function WardrobePage() {
 
   return (
     <div className={`min-h-screen ${styles.darkBg}`}>
-      {/* <DashboardHeader user={user} /> */}
       <main className="container mx-auto px-4 pt-12">
         <WardrobeNav
           view={view}
@@ -132,9 +130,7 @@ export default function WardrobePage() {
           showFilters={showFilters}
         />
         
-        {view === 'recommend' ? (
-          <OutfitRecommender userId={user?.id || ''} />
-        ) : view === 'upload' ? (
+        {view === 'upload' ? (
           <WardrobeUpload 
             userId={user?.id || ''} 
             onSuccess={() => setView('grid')}

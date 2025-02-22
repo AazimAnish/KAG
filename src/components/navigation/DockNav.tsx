@@ -3,31 +3,60 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Shirt, ShoppingBag, Home, Store } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shirt, ShoppingBag, Home, Store, User2, Wand2 } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import { ProfileDropdown } from '../layout/ProfileDropdown';
 import { Button } from '../ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { User } from '@/types/auth';
 
-const NavItem = ({ href, children, isActive }: { href: string; children: React.ReactNode; isActive: boolean }) => (
-    <Link href={href}>
-        <motion.div
-            className={`
-        relative px-4 py-2 
-        rounded-full 
-        transition-all duration-200
-        hover:bg-[#347928]/20
-        ${isActive ? 'bg-[#347928]/20' : 'bg-transparent'}
-      `}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-        >
-            {children}
-        </motion.div>
-    </Link>
-);
+interface NavItemProps {
+    href: string;
+    icon: React.ReactNode;
+    label: string;
+    isActive: boolean;
+}
+
+const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+        <Link href={href}>
+            <motion.div
+                className="relative flex flex-col items-center"
+                onHoverStart={() => setIsHovered(true)}
+                onHoverEnd={() => setIsHovered(false)}
+            >
+                <motion.div
+                    className={`
+                        relative px-4 py-2 
+                        rounded-full 
+                        transition-colors
+                        ${isActive ? 'bg-[#347928]/20' : 'hover:bg-[#347928]/20'}
+                    `}
+                    whileHover={{ scale: 1.4 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    {icon}
+                </motion.div>
+                
+                <AnimatePresence>
+                    {isHovered && (
+                        <motion.span
+                            className="absolute top-full mt-2 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            {label}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </Link>
+    );
+};
 
 export const DockNav = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -65,6 +94,14 @@ export const DockNav = () => {
         };
     }, []);
 
+    const navItems: NavItemProps[] = [
+        { href: '/', icon: <Home className="w-5 h-5 text-[#FFFDEC]" />, label: 'Home', isActive: pathname === '/' },
+        { href: '/dashboard/wardrobe', icon: <Shirt className="w-5 h-5 text-[#FFFDEC]" />, label: 'Wardrobe', isActive: pathname.includes('/wardrobe') },
+        { href: '/store', icon: <Store className="w-5 h-5 text-[#FFFDEC]" />, label: 'Store', isActive: pathname.includes('/store') },
+        { href: '/dashboard/kag-ai', icon: <Wand2 className="w-5 h-5 text-[#FFFDEC]" />, label: 'KAG-AI', isActive: pathname.includes('/kag-ai') },
+        { href: '/cart', icon: <ShoppingBag className="w-5 h-5 text-[#FFFDEC]" />, label: 'Cart', isActive: pathname.includes('/cart') },
+    ];
+
     return (
         <div className="fixed top-0 left-0 right-0 flex justify-between items-center z-50 p-4 bg-transparent">
             <Link href="/" className={`text-2xl font-bold ${styles.primaryText} ml-4 hover:opacity-80 transition-opacity`}>
@@ -77,33 +114,22 @@ export const DockNav = () => {
                 className="inline-flex"
             >
                 <div className={`
-          ${styles.glassmorph} 
-          px-6 py-2 
-          rounded-full 
-          flex items-center gap-4
-          backdrop-blur-md
-          border border-[#347928]/20
-          shadow-lg
-        `}>
-                    <NavItem href="/" isActive={pathname === '/'}>
-                        <Home className="w-5 h-5 text-[#FFFDEC]" />
-                    </NavItem>
-
-                    <div className="w-px h-6 bg-[#347928]/20" />
-
-                    <NavItem href="/dashboard/wardrobe" isActive={pathname.includes('/wardrobe')}>
-                        <Shirt className="w-5 h-5 text-[#FFFDEC]" />
-                    </NavItem>
-
-                    <NavItem href="/store" isActive={pathname.includes('/store')}>
-                        <Store className="w-5 h-5 text-[#FFFDEC]" />
-                    </NavItem>
-
-                    <NavItem href="/cart" isActive={pathname.includes('/cart')}>
-                        <ShoppingBag className="w-5 h-5 text-[#FFFDEC]" />
-                    </NavItem>
-
-                    <div className="w-px h-6 bg-[#347928]/20" />
+                    ${styles.glassmorph} 
+                    px-6 py-2 
+                    rounded-full 
+                    flex items-center gap-4
+                    backdrop-blur-md
+                    border border-[#347928]/20
+                    shadow-lg
+                `}>
+                    {navItems.map((item, index) => (
+                        <div key={item.href} className="flex items-center">
+                            <NavItem {...item} />
+                            {index < navItems.length - 1 && (
+                                <div className="w-px h-6 bg-[#347928]/20" />
+                            )}
+                        </div>
+                    ))}
 
                     {user ? (
                         <ProfileDropdown user={user} />

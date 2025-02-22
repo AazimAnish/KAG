@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Handle authentication state
-    const isProtectedRoute = ['/dashboard', '/admin', '/profile', '/wardrobe', '/store/checkout', '/store/orders']
+    const isProtectedRoute = ['/dashboard', '/admin', '/profile', '/wardrobe', '/store/checkout', '/store/orders', '/dashboard/kag-ai']
       .some(route => path.startsWith(route));
     const isAuthRoute = ['/signin', '/signup'].includes(path);
 
