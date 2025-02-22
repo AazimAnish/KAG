@@ -6,6 +6,7 @@ import { Product, Order } from '@/types/store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { styles } from '@/utils/constants';
+import { ProductManagement } from '@/components/admin/ProductManagement';
 
 export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
           <UserManagement />
         </TabsContent>
         <TabsContent value="products">
-          {/* Product management component */}
+          <ProductManagement />
         </TabsContent>
         <TabsContent value="orders">
           {/* Order management component */}
