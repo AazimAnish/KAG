@@ -20,7 +20,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { supabase } from '@/lib/supabase/client';
 import { OutfitSuggestion, OutfitEvent } from '@/types/wardrobe';
 import Image from 'next/image';
 import { OutfitChat } from '@/components/chat/OutfitChat';
@@ -41,27 +40,51 @@ import { User } from '@/types/auth';
 import { Loader2, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface OutfitRecommenderProps {
   userId: string;
 }
 
-interface ClothingItem {
+interface WardrobeItem {
   id: string;
   name: string;
+  description?: string;
   category: string;
-  color: string;
-  image_url: string;
   type: string;
+  color?: string;
+  size?: string;
+  brand?: string;
+  image_url?: string;
   styling_notes?: string;
   styling_tips?: string[];
   isStoreItem?: boolean;
   price?: number;
 }
 
+interface StoreItem {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  type: string;
+  color?: string;
+  size?: string;
+  brand?: string;
+  price?: number;
+  in_stock: boolean;
+  image_url?: string;
+}
+
 export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [loading, setLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState<ClothingItem[]>([]);
+  const [recommendation, setRecommendation] = useState<WardrobeItem[]>([]);
   const [pastSuggestions, setPastSuggestions] = useState<OutfitSuggestion[]>([]);
   const [events, setEvents] = useState<OutfitEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -75,15 +98,17 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [showNewEvent, setShowNewEvent] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [wardrobeItems, setWardrobeItems] = useState<ClothingItem[]>([]);
-  const [storeItems, setStoreItems] = useState<ClothingItem[]>([]);
+  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
+  const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadPastSuggestions();
-    loadEvents();
-    loadUser();
-    fetchWardrobeAndStoreItems();
+    if (userId) {
+      loadPastSuggestions();
+      loadEvents();
+      loadUser();
+      fetchWardrobeAndStoreItems();
+    }
   }, [userId]);
 
   const loadPastSuggestions = async () => {
@@ -135,60 +160,25 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
   const fetchWardrobeAndStoreItems = async () => {
     try {
-      // Check if tables exist first
-      const { data: tables } = await supabase
-        .from('pg_tables')
-        .select('tablename')
-        .in('tablename', ['wardrobe_items', 'products']);
+      const [wardrobeResult, storeResult] = await Promise.all([
+        supabase
+          .from('wardrobe_items')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false })
+      ]);
 
-      // Fetch wardrobe items with error handling
-      const wardrobeResult = await supabase
-        .from('wardrobe_items')
-        .select('id, type, image_url, category, color')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
+      if (wardrobeResult.error) throw wardrobeResult.error;
+      if (storeResult.error) throw storeResult.error;
 
-      if (wardrobeResult.error) {
-        console.error('Wardrobe fetch error:', wardrobeResult.error.message);
-      } else {
-        setWardrobeItems(wardrobeResult.data?.map(item => ({
-          id: item.id,
-          name: item.type,
-          category: item.category || item.type,
-          color: item.color || '',
-          image_url: item.image_url,
-          type: item.type
-        })) || []);
-      }
-
-      // Fetch store items with error handling
-      const storeResult = await supabase
-        .from('products')
-        .select('id, name, description, price, image_url, category, color')
-        .eq('in_stock', true);
-
-      if (storeResult.error) {
-        console.error('Store fetch error:', storeResult.error.message);
-      } else {
-        setStoreItems(storeResult.data?.map(item => ({
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          color: item.color || '',
-          image_url: item.image_url,
-          type: item.category,
-          price: item.price,
-          isStoreItem: true
-        })) || []);
-      }
-
+      setWardrobeItems(wardrobeResult.data || []);
+      setStoreItems(storeResult.data || []);
     } catch (error) {
-      console.error('Database connection error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to connect to database"
-      });
+      console.error('Error fetching items:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch items');
     }
   };
 
@@ -357,7 +347,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       // Your existing recommendation logic here
       // For example, randomly selecting items from different categories
       const categories = ['top', 'bottom', 'outerwear', 'shoes', 'accessories'];
-      const outfit: ClothingItem[] = [];
+      const outfit: WardrobeItem[] = [];
 
       categories.forEach(category => {
         const categoryItems = allItems.filter(item => item.category.toLowerCase() === category);
