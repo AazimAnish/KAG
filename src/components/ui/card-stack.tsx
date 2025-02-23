@@ -48,7 +48,8 @@ export const CardStack = ({
             key={card.id}
             className={`absolute h-60 w-60 md:h-80 md:w-[36rem] rounded-3xl p-6 
               ${styles.glassmorph} border border-[#D98324]/20
-              shadow-lg backdrop-blur-lg flex flex-col justify-between`}
+              shadow-lg backdrop-blur-lg flex flex-col justify-between
+              text-[#443627] dark:text-[#EFDCAB]`}
             style={{
               transformOrigin: "top center",
             }}

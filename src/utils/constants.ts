@@ -11,7 +11,7 @@ export const styles = {
   primaryFont: "font-candal tracking-wide",
   secondaryFont: "font-sriracha",
   kagaiFont: "font-satisfy font-bold",
-  heading: "font-candal tracking-wide text-[#443627] dark:text-[#EFDCAB]",
+  heading: "text-[#443627] dark:text-[#EFDCAB] font-candal tracking-wide",
   subheading: "font-sriracha font-medium",
   bodyText: "font-sriracha text-base",
   kagaiText: "font-satisfy text-[#D98324]",
