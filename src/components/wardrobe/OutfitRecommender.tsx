@@ -145,8 +145,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       const wardrobeResult = await supabase
         .from('wardrobe_items')
         .select('id, type, image_url, category, color')
-        .eq('user_id', userId)
-        .eq('status', 'completed');
+        .eq('user_id', userId);
 
       if (wardrobeResult.error) {
         console.error('Wardrobe fetch error:', wardrobeResult.error.message);

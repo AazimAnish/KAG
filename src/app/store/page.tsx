@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Product } from '@/types/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { styles } from '@/utils/constants';
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -20,50 +21,50 @@ export default function StorePage() {
   }, []);
 
   const loadProducts = async () => {
-    console.log('Starting to fetch products...');
-    const startTime = Date.now();
-    
     try {
       setLoading(true);
-      console.log('Fetching products from Supabase...');
-      
-      const { data, error, count } = await supabase
+      setError(null);
+
+      const { data, error: queryError } = await supabase
         .from('products')
-        .select('*', { count: 'exact' })
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
+      if (queryError) throw queryError;
 
-      console.log(`Successfully fetched ${count} products in ${Date.now() - startTime}ms`);
-      console.log('First product:', data?.[0]);
-      
-      setProducts(data || []);
+      // Ensure each product has an images array, even if empty
+      const validProducts = (data || []).map(product => ({
+        ...product,
+        images: product.images || [] // Provide empty array as fallback
+      }));
+
+      setProducts(validProducts);
     } catch (error) {
-      console.error('Failed to load products:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load products"
-      });
+      console.error('Error loading products:', error);
+      setError('Failed to load products. Please try again later.');
     } finally {
       setLoading(false);
-      console.log(`Total load time: ${Date.now() - startTime}ms`);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D98324 ] mb-4" />
-        <p className="text-sm text-gray-500">Loading products...</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-[#D98324]" />
       </div>
     );
   }
 
-  if (!products.length) {
+  if (error) {
+    return (
+      <div className="text-red-500 text-center py-4">
+        <p className="font-semibold">Error</p>
+        <p className="text-sm mt-1">{error}</p>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
     return (
       <div className="container mx-auto py-8 px-4">
         <h1 className={`text-3xl font-bold mb-8 ${styles.primaryText}`}>Store</h1>
@@ -81,8 +82,8 @@ export default function StorePage() {
             <CardContent className="p-4">
               <div className="relative aspect-square rounded-lg overflow-hidden mb-4">
                 <Image
-                  src={product.images[0]}
-                  alt={product.name}
+                  src={product.images?.[0] || '/images/placeholder-product.jpg'}
+                  alt={product.name || 'Product image'}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -96,7 +97,7 @@ export default function StorePage() {
                     ${product.price.toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500">
-                    {product.stock} in stock
+                    {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
