@@ -7,18 +7,34 @@ import { User } from '@/types/auth';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
 import { styles } from '@/utils/constants';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast()
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        // First try to get the current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (authError || !authUser) {
+        // If no session or session error, try to get user as fallback
+        if (!session || sessionError) {
+          const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+          
+          if (authError || !authUser) {
+            router.push('/signin');
+            return;
+          }
+        }
+
+        // Get the user from the session or direct auth call
+        const authUser = session?.user || (await supabase.auth.getUser()).data.user;
+        
+        if (!authUser) {
           router.push('/signin');
           return;
         }
@@ -51,6 +67,11 @@ export default function DashboardPage() {
         setUser(userData);
       } catch (error) {
         console.error('Error:', error instanceof Error ? error.message : error);
+        toast({
+          title: "Authentication Error",
+          description: "Please try refreshing the page or sign in again.",
+          variant: "destructive"
+        });
         router.push('/signin');
       } finally {
         setLoading(false);
@@ -58,6 +79,22 @@ export default function DashboardPage() {
     };
 
     checkUser();
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          router.push('/signin');
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          checkUser();
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   if (loading) {

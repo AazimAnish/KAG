@@ -49,10 +49,18 @@ export async function updateSession(request: NextRequest) {
           });
         },
       },
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      }
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-
-  return { response, session, supabase };
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { response, session, supabase };
+  } catch (error) {
+    console.error('Error refreshing auth in middleware:', error);
+    return { response, session: null, supabase };
+  }
 } 
