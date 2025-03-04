@@ -45,8 +45,8 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                         rounded-full 
                         transition-colors
                         ${isActive 
-                            ? isDark ? 'bg-[#D98324]/20' : 'bg-[#D98324]/30' 
-                            : isDark ? 'hover:bg-[#D98324]/20' : 'hover:bg-[#D98324]/30'
+                            ? 'bg-primary/20 dark:bg-primary/20' 
+                            : 'hover:bg-primary/20 dark:hover:bg-primary/20'
                         }
                     `}
                     whileHover={{ scale: 1.4 }}
@@ -60,10 +60,8 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                         <motion.span
                             className={`
                                 absolute top-full mt-2 px-2 py-1 
-                                ${isDark 
-                                    ? 'bg-[#443627]/80 text-[#EFDCAB]' 
-                                    : 'bg-[#EFDCAB]/90 text-[#443627]'
-                                } 
+                                bg-secondary/90 dark:bg-muted 
+                                text-secondary-foreground dark:text-foreground
                                 text-xs rounded whitespace-nowrap
                             `}
                             initial={{ opacity: 0, y: -10 }}
@@ -150,31 +148,31 @@ export const DockNav = () => {
     const navItems: NavItemProps[] = [
         { 
             href: '/', 
-            icon: <Home className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            icon: <Home className="w-5 h-5 text-foreground" />, 
             label: 'Home', 
             isActive: pathname === '/' 
         },
         { 
             href: '/dashboard/wardrobe', 
-            icon: <Shirt className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            icon: <Shirt className="w-5 h-5 text-foreground" />, 
             label: 'Wardrobe', 
             isActive: pathname.includes('/wardrobe') 
         },
         { 
             href: '/store', 
-            icon: <Store className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            icon: <Store className="w-5 h-5 text-foreground" />, 
             label: 'Store', 
             isActive: pathname.includes('/store') 
         },
         { 
             href: '/dashboard/kag-ai', 
-            icon: <Wand2 className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            icon: <Wand2 className="w-5 h-5 text-foreground" />, 
             label: 'KAG-AI', 
             isActive: pathname.includes('/kag-ai') 
         },
         { 
             href: '/cart', 
-            icon: <ShoppingBag className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            icon: <ShoppingBag className="w-5 h-5 text-foreground" />, 
             label: 'Cart', 
             isActive: pathname.includes('/cart') 
         },
@@ -201,21 +199,21 @@ export const DockNav = () => {
                     rounded-full 
                     flex items-center gap-4
                     backdrop-blur-md
-                    ${isDark ? 'border border-[#D98324]/20' : 'border border-[#D98324]/30'}
+                    border border-primary/30
                     shadow-lg
                 `}>
                     {navItems.map((item, index) => (
                         <div key={item.href} className="flex items-center">
                             <NavItem {...item} />
                             {index < navItems.length - 1 && (
-                                <div className={`w-px h-6 ${isDark ? 'bg-[#D98324]/20' : 'bg-[#D98324]/30'}`} />
+                                <div className="w-px h-6 bg-primary/20" />
                             )}
                         </div>
                     ))}
 
                     {isLoading ? (
                         <div className="h-8 w-8 flex items-center justify-center">
-                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-5 w-5 text-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -227,14 +225,14 @@ export const DockNav = () => {
                             <Link href="/signin">
                                 <Button
                                     variant="ghost"
-                                    className={`${isDark ? 'text-[#EFDCAB] hover:bg-[#D98324]/20' : 'text-[#443627] hover:bg-[#D98324]/30'}`}
+                                    className="text-foreground hover:bg-primary/20"
                                 >
                                     Sign In
                                 </Button>
                             </Link>
                             <Link href="/signup">
                                 <Button
-                                    className="bg-[#D98324] hover:bg-[#D98324]/80 text-[#F2F6D0]"
+                                    className="bg-primary hover:bg-primary/80 text-primary-foreground"
                                 >
                                     Sign Up
                                 </Button>
