@@ -9,8 +9,7 @@ const groq = new Groq({
 });
 
 async function validateUserProfile(userId: string): Promise<UserProfile> {
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = createRouteHandlerClient({ cookies });
 
   const { data: profile, error } = await supabase
     .from('profiles')
@@ -39,18 +38,30 @@ async function validateWardrobe(userId: string) {
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-  const { data: wardrobeItems, error } = await supabase
+  // Check wardrobe items
+  const { data: wardrobeItems, error: wardrobeError } = await supabase
     .from('wardrobe_items')
     .select('*')
     .eq('user_id', userId);
 
-  if (error) throw error;
+  if (wardrobeError) throw wardrobeError;
 
-  if (!wardrobeItems?.length) {
+  // Check store items (products)
+  const { data: storeItems, error: storeError } = await supabase
+    .from('products')
+    .select('*')
+    .eq('in_stock', true);
+
+  if (storeError) throw storeError;
+
+  const hasWardrobeItems = wardrobeItems?.length > 0;
+  const hasStoreItems = storeItems?.length > 0;
+
+  if (!hasWardrobeItems && !hasStoreItems) {
     throw new Error('WARDROBE_EMPTY');
   }
 
-  return wardrobeItems;
+  return wardrobeItems ?? [];
 }
 
 export async function POST(request: Request) {
@@ -69,6 +80,15 @@ export async function POST(request: Request) {
     try {
       const profile = await validateUserProfile(userId);
       const wardrobeItems = await validateWardrobe(userId);
+      
+      // Get store items for recommendations
+      const { data: storeItems, error: storeError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('in_stock', true);
+      
+      if (storeError) throw storeError;
+      
       const { data: event, error: eventError } = await supabase
         .from('events')
         .select('*')
@@ -79,7 +99,71 @@ export async function POST(request: Request) {
         throw new Error('Event not found');
       }
 
-      // Simplified and more structured prompt
+      // Check if we have wardrobe items and/or store items
+      const hasWardrobeItems = wardrobeItems?.length > 0;
+      const hasStoreItems = storeItems?.length > 0;
+      
+      // Process wardrobe items to have consistent fields
+      const processedWardrobeItems = wardrobeItems?.map(item => ({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        category: item.category,
+        color: item.color,
+        image_url: item.image_url,
+        isWardrobeItem: true
+      })) || [];
+      
+      // Process store items to have consistent fields
+      const processedStoreItems = (storeItems || []).map(item => ({
+        id: item.id,
+        type: item.type || item.category,
+        name: item.name,
+        category: item.category,
+        color: item.color,
+        image_url: item.image_url,
+        price: item.price,
+        isStoreItem: true
+      }));
+      
+      console.log(`Found ${processedWardrobeItems.length} wardrobe items and ${processedStoreItems.length} store items`);
+      
+      // Remove redundancy - filter out store items that are too similar to wardrobe items
+      const filteredStoreItems = processedStoreItems.filter(storeItem => {
+        // Consider items redundant if they have the same category/type AND (color OR similar name)
+        return !processedWardrobeItems.some(wardrobeItem => {
+          // Check if types/categories match
+          const sameType = 
+            (wardrobeItem.type === storeItem.type) || 
+            (wardrobeItem.category === storeItem.category);
+          
+          // Check if colors match (handle null or undefined values)
+          const sameColor = 
+            wardrobeItem.color && 
+            storeItem.color && 
+            wardrobeItem.color.toLowerCase() === storeItem.color.toLowerCase();
+          
+          // Check if names are similar (if both exist)
+          const similarName = 
+            wardrobeItem.name && 
+            storeItem.name && 
+            (wardrobeItem.name.toLowerCase().includes(storeItem.name.toLowerCase()) || 
+             storeItem.name.toLowerCase().includes(wardrobeItem.name.toLowerCase()));
+          
+          // Consider redundant if type matches AND (color or name matches)
+          const isRedundant = sameType && (sameColor || similarName);
+          
+          if (isRedundant) {
+            console.log(`Filtered out redundant store item: ${storeItem.name} (${storeItem.type}) that matches wardrobe item: ${wardrobeItem.name} (${wardrobeItem.type})`);
+          }
+          
+          return isRedundant;
+        });
+      });
+      
+      console.log(`After filtering, ${filteredStoreItems.length} unique store items remain`);
+
+      // Simplified and more structured prompt with fixed template syntax
       const systemPrompt = `You are a fashion expert creating outfit recommendations. 
 Format your response as a valid JSON object with this exact structure:
 {
@@ -106,22 +190,27 @@ User Profile:
 - Body Type: ${profile.body_type}
 - Gender: ${profile.gender}
 
-Available Items:
-${JSON.stringify(wardrobeItems.map(item => ({
-  id: item.id,
-  type: item.type,
-  image_url: item.image_url
-})), null, 2)}`;
+Rules:
+1. Create a stylish outfit appropriate for the event
+${hasStoreItems ? '2. Include at least 1 store item in your recommendations' : '2. Create the outfit from the available items'}
+3. Provide detailed styling notes for each item
+4. Include 3 styling tips for the overall outfit
+5. Avoid redundant items - don't recommend similar items that serve the same purpose
+
+Available Wardrobe Items:
+${JSON.stringify(processedWardrobeItems, null, 2)}
+
+Available Store Items:
+${JSON.stringify(filteredStoreItems, null, 2)}`;
 
       console.log('Sending prompt to Groq API...');
       const startTime = Date.now();
-          
+
       try {
-        // Set a timeout for the Groq API call - 30 seconds
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('AI request timed out')), 30000);
         });
-        
+
         const completionPromise = groq.chat.completions.create({
           messages: [
             {
@@ -130,75 +219,104 @@ ${JSON.stringify(wardrobeItems.map(item => ({
             }
           ],
           model: "mixtral-8x7b-32768",
-          temperature: 0.5, // Reduced for more consistent output
+          temperature: 0.5,
           max_tokens: 1024,
           top_p: 1,
           stream: false,
           response_format: { type: "json_object" }
         });
-        
-        const completion = await Promise.race([
-          completionPromise,
-          timeoutPromise
-        ]) as any; // Type assertion needed here
-        
+
+        const completion = await Promise.race([completionPromise, timeoutPromise]) as any;
+
         console.log(`Groq API responded in ${Date.now() - startTime}ms`);
-        
+
         const response = completion.choices[0]?.message?.content || '';
         let recommendation;
 
         try {
-          // Clean and validate the response
           const cleanedResponse = response
-            .replace(/```json\s*|\s*```/g, '') // Remove markdown code blocks
-            .replace(/\n/g, ' ') // Remove newlines
+            .replace(/```json\s*|\s*```/g, '')
+            .replace(/\n/g, ' ')
             .trim();
 
           recommendation = JSON.parse(cleanedResponse);
 
-          // Validate the structure
           if (!recommendation?.outfit?.items?.length) {
             throw new Error('Invalid outfit structure');
           }
 
-          // Validate each item has required fields
           recommendation.outfit.items.forEach((item: { id: string; type: string; styling_notes: string; image_url: string }) => {
             if (!item.id || !item.type || !item.styling_notes || !item.image_url) {
               throw new Error('Missing required item fields');
             }
           });
 
-          // Save recommendation to database
-          const { error: saveError } = await supabase
+          // Insert and retrieve the ID of the newly created recommendation
+          const { data: savedRecommendation, error: saveError } = await supabase
             .from('outfit_recommendations')
             .insert({
               event_id: eventId,
               user_id: userId,
               recommendation: recommendation.outfit,
               created_at: new Date().toISOString()
-            });
+            })
+            .select('id')
+            .single();
 
           if (saveError) {
             console.error('Error saving recommendation:', saveError);
+            return NextResponse.json(
+              { 
+                error: 'Failed to save recommendation',
+                details: saveError.message
+              },
+              { status: 500 }
+            );
           }
 
-          return NextResponse.json(recommendation);
+          // Include the recommendation ID in the response
+          return NextResponse.json({
+            ...recommendation,
+            recommendationId: savedRecommendation?.id
+          });
 
         } catch (parseError) {
           console.error('Error parsing AI response:', parseError);
           console.error('Raw response:', response);
-          
-          // Attempt to recover from common formatting issues
+
           try {
             const fixedResponse = response
-              .replace(/\\/g, '') // Remove escaped characters
-              .replace(/"\s*\+\s*"/g, '') // Fix concatenated strings
-              .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-              .replace(/([{\[]\s*),/g, '$1') // Remove leading commas
+              .replace(/\\/g, '')
+              .replace(/"\s*\+\s*"/g, '')
+              .replace(/,\s*([}\]])/g, '$1')
+              .replace(/([{\[]\s*),/g, '$1')
               .trim();
-            
+
             recommendation = JSON.parse(fixedResponse);
-            return NextResponse.json(recommendation);
+            
+            // Save the recommendation to get its ID even in the recovery path
+            const { data: savedRecommendation, error: saveError } = await supabase
+              .from('outfit_recommendations')
+              .insert({
+                event_id: eventId,
+                user_id: userId,
+                recommendation: recommendation.outfit,
+                created_at: new Date().toISOString()
+              })
+              .select('id')
+              .single();
+
+            if (saveError) {
+              console.error('Error saving recommendation (recovery path):', saveError);
+              // Continue even if saving fails in the recovery path
+            }
+
+            // Include the recommendation ID in the response if available
+            return NextResponse.json({
+              ...recommendation,
+              recommendationId: savedRecommendation?.id
+            });
+
           } catch (recoveryError) {
             return NextResponse.json(
               { 
@@ -241,7 +359,7 @@ ${JSON.stringify(wardrobeItems.map(item => ({
           case 'WARDROBE_EMPTY':
             return NextResponse.json(
               { 
-                error: 'Please add some items to your wardrobe before getting recommendations',
+                error: 'No items available for outfit recommendations. Please add items to your wardrobe or wait for store products to be available.',
                 code: 'WARDROBE_EMPTY'
               },
               { status: 400 }

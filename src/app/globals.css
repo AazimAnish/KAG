@@ -4,7 +4,7 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  @apply bg-[#1A1A19];
+  @apply bg-background;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -81,21 +81,21 @@ body {
     -webkit-backdrop-filter: blur(12px);
   }
   .nav-blur {
-    @apply backdrop-blur-md bg-[#1A1A19]/40;
+    @apply backdrop-blur-md bg-background/40;
   }
 }
 
 /* Add this at the end of the file */
 .dock-nav-container {
   isolation: isolate;
-  background-color: #1A1A19;
+  @apply bg-background;
 }
 
 .dock-nav-container::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: #1A1A19;
+  @apply bg-background;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: -1;

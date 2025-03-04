@@ -8,12 +8,12 @@ import { User } from '@/types/auth';
 import Link from 'next/link';
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 
 export const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link 
     href={href} 
-    className={`text-[#FFFDEC] hover:text-[#D98324 ] transition-colors`}
+    className="text-foreground hover:text-primary transition-colors"
   >
     {children}
   </Link>
@@ -21,6 +21,8 @@ export const NavLink = ({ href, children }: { href: string; children: React.Reac
 
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
 
@@ -33,31 +35,59 @@ export const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    // Initial user check
-    getUser();
+    const checkAuthState = async () => {
+      try {
+        setIsLoading(true);
+        // Check for active session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+              name: profile.name,
+              avatar_url: profile.avatar_url,
+              gender: profile.gender,
+              bodyType: profile.body_type,
+              measurements: profile.measurements,
+            });
+            
+            // Check if user is admin
+            setIsAdmin(profile.role === 'admin');
+          } else {
+            setUser(null);
+            setIsAdmin(false);
+          }
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setUser(null);
+        setIsAdmin(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Initial auth check
+    checkAuthState();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            name: profile.name,
-            avatar_url: profile.avatar_url,
-            gender: profile.gender,
-            bodyType: profile.body_type,
-            measurements: profile.measurements,
-          });
-        }
-      } else {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        checkAuthState();
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setIsAdmin(false);
       }
     });
 
@@ -66,57 +96,57 @@ export const Navbar = () => {
     };
   }, []);
 
-  const getUser = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
-      if (profile) {
-        setUser({
-          id: authUser.id,
-          email: authUser.email!,
-          name: profile.name,
-          avatar_url: profile.avatar_url,
-          gender: profile.gender,
-          bodyType: profile.body_type,
-          measurements: profile.measurements,
-        });
-      }
-    }
-  };
-
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      setUser(null);
-      router.push('/signin');
+      // Use global scope to ensure complete sign-out
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear local storage and session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Force a hard refresh to clear client-side state
+      window.location.href = '/signin';
     } catch (error) {
       console.error('Error signing out:', error);
+      // Fallback for errors
+      window.location.href = '/signin';
     }
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#1A1A19]/80 backdrop-blur-lg' : ''}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'nav-blur' : ''}`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo - now always links to home */}
           <Link href="/" className="flex items-center">
-            <span className={`font-cinzel text-2xl ${styles.primaryText}`}>KAG</span>
+            <span className="font-cinzel text-2xl text-primary">KAG</span>
           </Link>
 
           <div className="flex items-center gap-6">
-            {user ? (
+            {isLoading ? (
+              <div className="h-8 w-8 flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 text-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            ) : user ? (
               <>
                 <NavLink href="/dashboard">Dashboard</NavLink>
                 <NavLink href="/dashboard/wardrobe">Wardrobe</NavLink>
+                {isAdmin && (
+                  <NavLink href="/admin">
+                    <div className="flex items-center gap-1">
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin
+                    </div>
+                  </NavLink>
+                )}
                 <Button
                   onClick={handleSignOut}
                   variant="ghost"
-                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 text-[#FFFDEC]`}
+                  className="hover:bg-primary/20 text-foreground"
                 >
                   <LogOut className="h-5 w-5 mr-2" />
                   Sign Out
@@ -130,14 +160,15 @@ export const Navbar = () => {
                 <NavLink href="/#about">About</NavLink>
                 <Link href="/signin">
                   <Button 
-                    className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 text-[#FFFDEC]`}
+                    variant="ghost"
+                    className="hover:bg-primary/20 text-foreground"
                   >
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button 
-                    className="bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
+                    className="bg-primary hover:bg-primary/80 text-primary-foreground"
                   >
                     Sign Up
                   </Button>

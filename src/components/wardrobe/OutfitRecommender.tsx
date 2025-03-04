@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase/client';
 import { OutfitSuggestion, OutfitEvent } from '@/types/wardrobe';
 import Image from 'next/image';
 import { OutfitChat } from '@/components/chat/OutfitChat';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2, ShoppingBag } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OutfitTryOn } from './OutfitTryOn';
 import { User } from '@/types/auth';
-import { Loader2, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Progress } from "@/components/ui/progress";
@@ -83,6 +82,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const { toast } = useToast();
   const [outfitDescription, setOutfitDescription] = useState('');
   const [outfit, setOutfit] = useState<any>(null);
+  const [recommendationId, setRecommendationId] = useState<string | null>(null);
 
   // Event form state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -224,7 +224,9 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         .single();
 
       if (eventError) {
-        throw new Error('Failed to save event');
+        setError('Failed to save event');
+        setLoading(false);
+        return;
       }
 
       setGenerationStep("Analyzing your wardrobe...");
@@ -257,16 +259,18 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          // Handle specific API error codes
+          // Handle specific API error codes without throwing exceptions
           if (errorData.code === 'PROFILE_NOT_FOUND') {
-            throw new Error('Please create your profile before getting recommendations.');
+            setError('Please create your profile before getting recommendations.');
           } else if (errorData.code === 'PROFILE_INCOMPLETE') {
-            throw new Error('Please complete your profile details before getting recommendations.');
+            setError('Please complete your profile details before getting recommendations.');
           } else if (errorData.code === 'WARDROBE_EMPTY') {
-            throw new Error('Please add some items to your wardrobe before getting recommendations.');
+            setError('No items available for outfit recommendations. Please add items to your wardrobe or wait for store products to be available.');
           } else {
-            throw new Error(errorData.error || 'Failed to get recommendations');
+            setError(errorData.error || 'Failed to get recommendations');
           }
+          setLoading(false);
+          return;
         }
 
         const responseData = await response.json();
@@ -278,13 +282,14 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('Request timed out. Please try again.');
+          setError('Request timed out. Please try again.');
+        } else {
+          setError(fetchError instanceof Error ? fetchError.message : 'An unexpected error occurred');
         }
-        throw fetchError;
+        setLoading(false);
       }
     } catch (error) {
-      console.error('Error:', error);
-      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
       setLoading(false);
     }
   };
@@ -299,11 +304,13 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         .single();
 
       if (fetchError) {
-        throw new Error(`Failed to fetch suggestion details: ${fetchError.message}`);
+        setError(`Failed to fetch suggestion details: ${fetchError.message}`);
+        return;
       }
 
       if (!suggestion) {
-        throw new Error('Suggestion not found');
+        setError('Suggestion not found');
+        return;
       }
 
       // Delete in correct order to respect foreign key constraints
@@ -315,7 +322,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         .eq('outfit_recommendation_id', suggestionId);  // Updated column name
 
       if (fetchChatsError) {
-        throw new Error(`Failed to fetch chats: ${fetchChatsError.message}`);
+        setError(`Failed to fetch chats: ${fetchChatsError.message}`);
+        return;
       }
 
       if (chats && chats.length > 0) {
@@ -326,7 +334,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
           .in('chat_id', chats.map(chat => chat.id));
 
         if (messagesError) {
-          throw new Error(`Failed to delete chat messages: ${messagesError.message}`);
+          setError(`Failed to delete chat messages: ${messagesError.message}`);
+          return;
         }
 
         // Delete all chats
@@ -336,7 +345,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
           .eq('outfit_recommendation_id', suggestionId);  // Updated column name
 
         if (chatsError) {
-          throw new Error(`Failed to delete chats: ${chatsError.message}`);
+          setError(`Failed to delete chats: ${chatsError.message}`);
+          return;
         }
       }
 
@@ -347,7 +357,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         .eq('id', suggestionId);
 
       if (outfitError) {
-        throw new Error(`Failed to delete outfit recommendation: ${outfitError.message}`);
+        setError(`Failed to delete outfit recommendation: ${outfitError.message}`);
+        return;
       }
 
       // 3. Finally delete the event
@@ -357,7 +368,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         .eq('id', suggestion.event_id);
 
       if (eventError) {
-        throw new Error(`Failed to delete event: ${eventError.message}`);
+        setError(`Failed to delete event: ${eventError.message}`);
+        return;
       }
 
       // Refresh the suggestions list
@@ -370,15 +382,14 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       }
 
       // Show success message
-      setError('Successfully deleted outfit suggestion');
-      setTimeout(() => setError(null), 3000);
+      toast({
+        title: "Success",
+        description: "Outfit suggestion deleted successfully",
+        variant: "default"
+      });
 
     } catch (error) {
-      console.error('Error deleting suggestion:', {
-        error,
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      console.error('Error deleting suggestion:', error);
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
   };
@@ -421,6 +432,11 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       throw new Error('Invalid recommendation format received');
     }
     
+    // Save the recommendation ID if available
+    if (responseData.recommendationId) {
+      setRecommendationId(responseData.recommendationId);
+    }
+    
     // Save the outfit description if available
     setOutfitDescription(responseData.outfit.description || '');
     
@@ -433,7 +449,9 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       image_url: item.image_url || '',
       type: item.type || '',
       styling_notes: item.styling_notes || '',
-      styling_tips: responseData.outfit.styling_tips || []
+      styling_tips: responseData.outfit.styling_tips || [],
+      isStoreItem: item.isStoreItem === true,
+      price: item.price || 0
     })));
     
     // Set the outfit data for display
@@ -448,6 +466,56 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
     
     // Load past suggestions if needed
     loadPastSuggestions();
+    
+    // Complete the loading state
+    setLoading(false);
+  };
+
+  // Function to add item to cart
+  const addToCart = async (item: ClothingItem) => {
+    try {
+      // Get current cart from local storage
+      const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      
+      // Check if item already exists in cart
+      const existingItemIndex = currentCart.findIndex((cartItem: any) => cartItem.id === item.id);
+      
+      if (existingItemIndex >= 0) {
+        // Increment quantity if item exists
+        currentCart[existingItemIndex].quantity += 1;
+      } else {
+        // Add new item with quantity 1
+        currentCart.push({
+          ...item,
+          quantity: 1,
+          selectedSize: 'M', // Default size
+          selectedColor: item.color || 'Default'
+        });
+      }
+      
+      // Save updated cart to local storage
+      localStorage.setItem('cart', JSON.stringify(currentCart));
+      
+      // Show success message
+      toast({
+        title: "Added to Cart",
+        description: `${item.name} has been added to your cart`,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add item to cart"
+      });
+    }
+  };
+
+  // Function to handle buy now action
+  const buyNow = (item: ClothingItem) => {
+    addToCart(item);
+    // Navigate to cart page
+    window.location.href = '/cart';
   };
 
   return (
@@ -678,16 +746,28 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </CardContent>
             </Card>
 
-            {showChat && (
+            {showChat && recommendationId && (
               <OutfitChat 
                 userId={userId} 
-                outfitId={recommendation[0].id}
-                outfitDetails={recommendation.map(item => ({
-                  ...item,
-                  styling_notes: item.styling_notes || '',
-                  styling_tips: item.styling_tips || []
-                }))}
+                outfitId={recommendationId}
+                outfitDetails={{
+                  description: outfitDescription,
+                  items: recommendation,
+                  styling_tips: recommendation[0]?.styling_tips || []
+                }}
               />
+            )}
+            {showChat && !recommendationId && (
+              <div className="p-4 bg-yellow-50 rounded-md shadow my-4">
+                <p className="text-amber-800">Unable to access outfit details. Please try generating a new recommendation.</p>
+                <Button 
+                  onClick={() => setShowChat(false)} 
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Go Back
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -731,18 +811,40 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 <h3 className="font-semibold">{item.name}</h3>
                 <p className="text-sm text-gray-400">{item.category}</p>
                 
+                {item.styling_notes && (
+                  <p className="text-sm my-2 italic">{item.styling_notes}</p>
+                )}
+                
                 {item.isStoreItem && (
-                  <div className="mt-2 flex justify-between items-center">
-                    <span className="text-[#D98324 ] font-bold">${item.price}</span>
-                    <Link href={`/store/product/${item.id}`}>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#D98324] font-bold">${item.price}</span>
+                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Store Item</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
                       <Button
                         size="sm"
-                        className="bg-[#D98324] hover:bg-[#D98324]/80"
+                        variant="outline"
+                        className="flex-1 border-[#D98324] text-[#D98324] hover:bg-[#D98324]/10"
+                        onClick={() => addToCart(item)}
                       >
                         <ShoppingBag className="h-4 w-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-[#D98324] hover:bg-[#D98324]/80"
+                        onClick={() => buyNow(item)}
+                      >
                         Buy Now
                       </Button>
-                    </Link>
+                    </div>
+                  </div>
+                )}
+                
+                {!item.isStoreItem && (
+                  <div className="mt-2">
+                    <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">From Your Wardrobe</span>
                   </div>
                 )}
               </div>

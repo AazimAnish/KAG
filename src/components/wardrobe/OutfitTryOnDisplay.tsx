@@ -188,7 +188,7 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
           <div className={`${styles.glassmorph} rounded-lg p-6`}>
             <h3 className={`${styles.primaryText} font-semibold mb-4`}>
               Result
-              {loading && <Badge className="ml-2 bg-blue-500">Processing</Badge>}
+              {loading && <Badge variant="info" className="ml-2">Processing</Badge>}
             </h3>
             <div className="relative aspect-[3/4] w-full">
               {resultImage ? (

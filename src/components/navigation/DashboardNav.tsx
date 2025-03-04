@@ -20,7 +20,7 @@ export const DashboardNav = () => {
   };
 
   return (
-    <nav className={`fixed top-0 w-full z-50 ${styles.glassmorph} border-b border-[#D98324 ]/20`}>
+    <nav className={`fixed top-0 w-full z-50 ${styles.glassmorph} border-b border-primary/20`}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -33,11 +33,11 @@ export const DashboardNav = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 ${
-                    isActive('/dashboard/wardrobe') ? 'bg-[#D98324 ]/20' : ''
+                  className={`${styles.glassmorph} hover:bg-primary/20 ${
+                    isActive('/dashboard/wardrobe') ? 'bg-primary/20' : ''
                   }`}
                 >
-                  <Shirt className="h-5 w-5 text-[#EFDCAB]" />
+                  <Shirt className="h-5 w-5 text-foreground" />
                   <span className={`ml-2 ${styles.secondaryText}`}>Wardrobe</span>
                 </Button>
               </Link>
@@ -46,11 +46,11 @@ export const DashboardNav = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20 ${
-                    pathname === '/dashboard' ? 'bg-[#D98324 ]/20' : ''
+                  className={`${styles.glassmorph} hover:bg-primary/20 ${
+                    pathname === '/dashboard' ? 'bg-primary/20' : ''
                   }`}
                 >
-                  <User className="h-5 w-5 text-[#EFDCAB]" />
+                  <User className="h-5 w-5 text-foreground" />
                   <span className={`ml-2 ${styles.secondaryText}`}>Profile</span>
                 </Button>
               </Link>
@@ -61,9 +61,9 @@ export const DashboardNav = () => {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
+            className={`${styles.glassmorph} hover:bg-primary/20`}
           >
-            <LogOut className="h-5 w-5 text-[#EFDCAB]" />
+            <LogOut className="h-5 w-5 text-foreground" />
             <span className={`ml-2 ${styles.secondaryText}`}>Sign Out</span>
           </Button>
         </div>

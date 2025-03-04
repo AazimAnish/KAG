@@ -11,14 +11,22 @@ export interface Product {
   pattern: string;
   fit: string;
   images: string[];
+  image_url?: string;
+  type?: string;
+  brand?: string;
   stock: number;
+  in_stock?: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface CartItem extends Product {
   quantity: number;
   selectedSize: string;
   selectedColor: string;
+  image_url?: string;
+  type?: string;
+  brand?: string;
 }
 
 export interface Order {

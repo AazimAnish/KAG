@@ -76,6 +76,8 @@ export const ProductManagement = () => {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -126,8 +128,23 @@ export const ProductManagement = () => {
         throw new Error('File size must be less than 10MB');
       }
 
+      // Validate file type
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validImageTypes.includes(file.type)) {
+        throw new Error('File must be a JPEG, PNG, or WebP image');
+      }
+
       updateUploadStatus('uploading', 30, 'Preparing file for upload...');
-      const fileExt = file.name.split('.').pop();
+      
+      // Ensure we have a proper file extension
+      let fileExt = file.name.split('.').pop()?.toLowerCase();
+      // Validate and normalize file extension
+      if (!fileExt || !['jpg', 'jpeg', 'png', 'webp'].includes(fileExt)) {
+        // Default to jpg if extension is invalid
+        fileExt = file.type === 'image/png' ? 'png' : 
+                  file.type === 'image/webp' ? 'webp' : 'jpg';
+      }
+      
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `store/${fileName}`;
 
@@ -158,6 +175,11 @@ export const ProductManagement = () => {
 
       if (!publicUrl) {
         throw new Error('Failed to get public URL');
+      }
+
+      // Validate the URL format
+      if (!publicUrl.startsWith('http')) {
+        throw new Error('Invalid URL format returned from storage');
       }
 
       // Analyze the image using the analyze-clothing API
@@ -194,68 +216,164 @@ export const ProductManagement = () => {
     }
   };
 
+  const handleEditClick = (product: Product) => {
+    setEditMode(true);
+    setEditProductId(product.id);
+    setNewProduct({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      size: product.size,
+      color: product.color,
+      category: product.category,
+      type: product.type || '',
+      brand: product.brand || '',
+      in_stock: product.in_stock !== undefined ? product.in_stock : true,
+    });
+    setDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setNewProduct({
+      name: '',
+      description: '',
+      price: '',
+      size: '',
+      color: '',
+      category: '',
+      type: '',
+      brand: '',
+      in_stock: true,
+    });
+    setSelectedImage(null);
+    setEditMode(false);
+    setEditProductId(null);
+    updateUploadStatus('idle', 0, '');
+  };
+
+  const handleDialogClose = () => {
+    resetForm();
+    setDialogOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (!selectedImage) {
-        throw new Error('Please select an image');
-      }
-
       // Validate form data
       if (!newProduct.name || !newProduct.price) {
         throw new Error('Please fill in all required fields');
       }
 
-      updateUploadStatus('uploading', 0, 'Starting upload process...');
-
-      // Upload and analyze image
-      const { url, category, color } = await handleImageUpload(selectedImage);
-
-      // Create product with uploaded image URL and analysis results
-      updateUploadStatus('saving', 95, 'Saving product to database...');
-      const { error: insertError } = await supabase
-        .from('products')
-        .insert([
-          {
+      // If in edit mode and no image selected, update product without image upload
+      if (editMode && !selectedImage) {
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
             name: newProduct.name,
             description: newProduct.description || '',
             price: parseFloat(newProduct.price),
             size: newProduct.size,
-            color: color,
-            category: category,
+            color: newProduct.color,
+            category: newProduct.category,
             type: newProduct.type,
             brand: newProduct.brand || '',
-            image_url: url,
             in_stock: newProduct.in_stock,
-            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          }
-        ]);
+          })
+          .eq('id', editProductId);
 
-      if (insertError) {
-        console.error('Database insert error:', insertError);
-        throw new Error(insertError.message || 'Failed to add product');
+        if (updateError) {
+          console.error('Database update error:', updateError);
+          throw new Error(updateError.message || 'Failed to update product');
+        }
+
+        toast({
+          title: "Success",
+          description: "Product updated successfully"
+        });
+
+        resetForm();
+        setDialogOpen(false);
+        loadProducts();
+        return;
       }
 
-      toast({
-        title: "Success",
-        description: "Product added successfully"
-      });
+      // If new product or edit with image upload
+      if (!selectedImage && !editMode) {
+        throw new Error('Please select an image');
+      }
+
+      updateUploadStatus('uploading', 0, 'Starting upload process...');
+
+      let imageData = { url: '', category: '', color: '' };
+      
+      // Upload image if provided
+      if (selectedImage) {
+        imageData = await handleImageUpload(selectedImage);
+      }
+
+      if (editMode && editProductId) {
+        // Update existing product with new image if provided
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
+            name: newProduct.name,
+            description: newProduct.description || '',
+            price: parseFloat(newProduct.price),
+            size: newProduct.size,
+            color: selectedImage ? imageData.color : newProduct.color,
+            category: selectedImage ? imageData.category : newProduct.category,
+            type: newProduct.type,
+            brand: newProduct.brand || '',
+            image_url: selectedImage ? imageData.url : undefined, // Only update if new image
+            in_stock: newProduct.in_stock,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editProductId);
+
+        if (updateError) {
+          console.error('Database update error:', updateError);
+          throw new Error(updateError.message || 'Failed to update product');
+        }
+
+        toast({
+          title: "Success",
+          description: "Product updated successfully"
+        });
+      } else {
+        // Create new product
+        const { error: insertError } = await supabase
+          .from('products')
+          .insert([
+            {
+              name: newProduct.name,
+              description: newProduct.description || '',
+              price: parseFloat(newProduct.price),
+              size: newProduct.size,
+              color: imageData.color,
+              category: imageData.category,
+              type: newProduct.type,
+              brand: newProduct.brand || '',
+              image_url: imageData.url,
+              in_stock: newProduct.in_stock,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          ]);
+
+        if (insertError) {
+          console.error('Database insert error:', insertError);
+          throw new Error(insertError.message || 'Failed to add product');
+        }
+
+        toast({
+          title: "Success",
+          description: "Product added successfully"
+        });
+      }
 
       // Reset form and reload products
-      setNewProduct({
-        name: '',
-        description: '',
-        price: '',
-        size: '',
-        color: '',
-        category: '',
-        type: '',
-        brand: '',
-        in_stock: true,
-      });
-      setSelectedImage(null);
-      updateUploadStatus('idle', 0, '');
+      resetForm();
       setDialogOpen(false);
       loadProducts();
 
@@ -264,7 +382,7 @@ export const ProductManagement = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add product"
+        description: error instanceof Error ? error.message : "Failed to process product"
       });
       updateUploadStatus('idle', 0, '');
     }
@@ -283,7 +401,7 @@ export const ProductManagement = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
+              <DialogTitle>{editMode ? 'Edit Product' : 'Add New Product'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -371,7 +489,7 @@ export const ProductManagement = () => {
                 type="file"
                 accept="image/*"
                 onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
-                required
+                required={!editMode}
               />
               
               {uploadStatus.stage !== 'idle' && (
@@ -384,16 +502,27 @@ export const ProductManagement = () => {
                 </div>
               )}
               
-              <Button 
-                type="submit" 
-                className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80"
-                disabled={uploadStatus.stage !== 'idle'}
-              >
-                {uploadStatus.stage !== 'idle' ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                {uploadStatus.stage !== 'idle' ? 'Processing...' : 'Add Product'}
-              </Button>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleDialogClose}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-[#D98324 ] hover:bg-[#D98324 ]/80"
+                  disabled={uploadStatus.stage !== 'idle'}
+                >
+                  {uploadStatus.stage !== 'idle' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : editMode ? 'Update Product' : 'Add Product'}
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
@@ -435,7 +564,7 @@ export const ProductManagement = () => {
                   <Button
                     variant="outline"
                     className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
-                    onClick={() => {/* Add edit functionality */}}
+                    onClick={() => handleEditClick(product)}
                   >
                     Edit
                   </Button>

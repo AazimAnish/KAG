@@ -88,6 +88,85 @@ export interface Database {
           metadata?: Json | null
         }
       }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          items: Json
+          total: number
+          status: string
+          shipping_address: string
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          items: Json
+          total: number
+          status: string
+          shipping_address: string
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          items?: Json
+          total?: number
+          status?: string
+          shipping_address?: string
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      wardrobe_items: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          category: string
+          type: string
+          color: string | null
+          size: string | null
+          brand: string | null
+          image_url: string | null
+          source: string
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          category: string
+          type: string
+          color?: string | null
+          size?: string | null
+          brand?: string | null
+          image_url?: string | null
+          source?: string
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          category?: string
+          type?: string
+          color?: string | null
+          size?: string | null
+          brand?: string | null
+          image_url?: string | null
+          source?: string
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
     }
   }
 } 
