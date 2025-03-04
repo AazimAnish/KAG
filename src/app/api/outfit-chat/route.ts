@@ -12,8 +12,7 @@ export async function POST(request: Request) {
     const { userId, outfitId, message, previousMessages = [], chatId: existingChatId, outfitDetails } = await request.json();
     let chatId = existingChatId;
 
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Create new chat if chatId is not provided
     if (!chatId) {

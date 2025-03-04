@@ -164,13 +164,7 @@ export default function CartPage() {
       setProcessingOrder(true);
       
       // Get current user
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Authentication error: ' + sessionError.message);
-      }
-      
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         toast({
           variant: "destructive",
@@ -191,207 +185,48 @@ export default function CartPage() {
 
       const orderItems = checkoutItems.length > 0 ? checkoutItems : cartItems;
       
-      console.log('Creating order with items:', orderItems.length);
-      
-      let orderId = '';
-      
-      try {
-        // Create the order
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
+      // Create the order
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([
+          {
+            user_id: session.user.id,
+            items: orderItems,
+            total: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+            status: 'pending',
+            shipping_address: shippingAddress,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select();
+
+      if (orderError) throw orderError;
+
+      // Add items to user's wardrobe
+      for (const item of orderItems) {
+        // Ensure we have an image URL for the wardrobe item
+        const imageUrl = item.image_url || (item.images && item.images.length > 0 ? item.images[0] : null);
+        
+        const { error: wardrobeError } = await supabase
+          .from('wardrobe_items')
           .insert([
             {
               user_id: session.user.id,
-              items: orderItems,
-              total: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-              status: 'pending',
-              shipping_address: shippingAddress,
-              created_at: new Date().toISOString()
+              name: item.name,
+              description: item.description,
+              category: item.category,
+              type: item.type || item.category,
+              color: item.selectedColor || item.color,
+              size: item.selectedSize,
+              brand: item.brand || '',
+              image_url: imageUrl,
+              source: 'purchased',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
-          ])
-          .select();
+          ]);
 
-        if (orderError) {
-          console.error('Order creation error:', orderError);
-          // If we get a 404 error, the table might not exist - fall back to local storage
-          if (orderError.code === '404' || orderError.message?.includes('relation') || orderError.message?.includes('does not exist')) {
-            console.log('Orders table likely does not exist, storing order locally');
-            // Generate a local order ID
-            orderId = 'local-' + Date.now();
-            
-            // Store order in local storage
-            const existingOrders = JSON.parse(localStorage.getItem(`orders_${session.user.id}`) || '[]');
-            const newOrder = {
-              id: orderId,
-              user_id: session.user.id,
-              items: orderItems,
-              total: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-              status: 'pending',
-              shipping_address: shippingAddress,
-              created_at: new Date().toISOString()
-            };
-            
-            existingOrders.push(newOrder);
-            localStorage.setItem(`orders_${session.user.id}`, JSON.stringify(existingOrders));
-            console.log('Order stored locally with ID:', orderId);
-          } else {
-            // Rethrow other errors
-            throw new Error('Failed to create order: ' + orderError.message);
-          }
-        } else {
-          console.log('Order created successfully in database:', orderData?.[0]?.id);
-          orderId = orderData?.[0]?.id;
-        }
-      } catch (orderCreateError) {
-        console.error('Failed to create order:', orderCreateError);
-        // Use local storage as a fallback
-        orderId = 'local-' + Date.now();
-        
-        // Store order in local storage
-        const existingOrders = JSON.parse(localStorage.getItem(`orders_${session.user.id}`) || '[]');
-        const newOrder = {
-          id: orderId,
-          user_id: session.user.id,
-          items: orderItems,
-          total: orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-          status: 'pending',
-          shipping_address: shippingAddress,
-          created_at: new Date().toISOString()
-        };
-        
-        existingOrders.push(newOrder);
-        localStorage.setItem(`orders_${session.user.id}`, JSON.stringify(existingOrders));
-        console.log('Order stored locally with ID (fallback):', orderId);
-      }
-
-      // Add items to user's wardrobe - also handle possible missing table
-      let wardrobeItemsAdded = true;
-      for (const item of orderItems) {
-        try {
-          // Ensure we have an image URL for the wardrobe item
-          const imageUrl = item.image_url || (item.images && item.images.length > 0 ? item.images[0] : null);
-          
-          console.log(`Adding item to wardrobe: ${item.name}, image: ${imageUrl ? 'Yes' : 'No'}`);
-          
-          // First, try to insert without the 'source' field in case the column doesn't exist
-          let wardrobeError;
-          
-          // Check if we've already encountered a PGRST204 error with the source column
-          const hasSourceColumnError = localStorage.getItem('wardrobe_source_column_missing') === 'true';
-          
-          if (hasSourceColumnError) {
-            // If we know the source column is missing, don't include it
-            const { error } = await supabase
-              .from('wardrobe_items')
-              .insert([
-                {
-                  user_id: session.user.id,
-                  name: item.name,
-                  description: item.description,
-                  category: item.category,
-                  type: item.type || item.category,
-                  color: item.selectedColor || item.color,
-                  size: item.selectedSize,
-                  brand: item.brand || '',
-                  image_url: imageUrl,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-              ]);
-            
-            wardrobeError = error;
-          } else {
-            // Try with the source column first
-            const { error } = await supabase
-              .from('wardrobe_items')
-              .insert([
-                {
-                  user_id: session.user.id,
-                  name: item.name,
-                  description: item.description,
-                  category: item.category,
-                  type: item.type || item.category,
-                  color: item.selectedColor || item.color,
-                  size: item.selectedSize,
-                  brand: item.brand || '',
-                  image_url: imageUrl,
-                  source: 'purchased',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-              ]);
-            
-            wardrobeError = error;
-            
-            // If we get a PGRST204 error about the source column, try again without it
-            if (wardrobeError && 
-                wardrobeError.code === 'PGRST204' && 
-                wardrobeError.message && 
-                wardrobeError.message.includes('source')) {
-              
-              console.log('Source column is missing, trying without it');
-              localStorage.setItem('wardrobe_source_column_missing', 'true');
-              
-              const { error: retryError } = await supabase
-                .from('wardrobe_items')
-                .insert([
-                  {
-                    user_id: session.user.id,
-                    name: item.name,
-                    description: item.description,
-                    category: item.category,
-                    type: item.type || item.category,
-                    color: item.selectedColor || item.color,
-                    size: item.selectedSize,
-                    brand: item.brand || '',
-                    image_url: imageUrl,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                  }
-                ]);
-              
-              wardrobeError = retryError;
-            }
-          }
-
-          if (wardrobeError) {
-            console.error(`Error adding item ${item.name} to wardrobe:`, wardrobeError);
-            
-            // If the table doesn't exist, store wardrobe items locally too
-            if (wardrobeError.code === '404' || 
-                wardrobeError.message?.includes('relation') || 
-                wardrobeError.message?.includes('does not exist')) {
-              
-              console.log('Wardrobe_items table likely does not exist, storing item locally');
-              
-              // Store wardrobe items in local storage
-              const existingItems = JSON.parse(localStorage.getItem(`wardrobe_${session.user.id}`) || '[]');
-              const newItem = {
-                id: 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11),
-                user_id: session.user.id,
-                name: item.name,
-                description: item.description,
-                category: item.category,
-                type: item.type || item.category,
-                color: item.selectedColor || item.color,
-                size: item.selectedSize,
-                brand: item.brand || '',
-                image_url: imageUrl,
-                source: 'purchased',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              };
-              
-              existingItems.push(newItem);
-              localStorage.setItem(`wardrobe_${session.user.id}`, JSON.stringify(existingItems));
-            } else {
-              wardrobeItemsAdded = false;
-            }
-          }
-        } catch (itemError) {
-          console.error(`Error processing wardrobe item ${item.name}:`, itemError);
-          wardrobeItemsAdded = false;
-        }
+        if (wardrobeError) console.error('Error adding to wardrobe:', wardrobeError);
       }
 
       // Clear the items from cart if all items were purchased
@@ -413,40 +248,15 @@ export default function CartPage() {
       
       toast({
         title: "Order placed successfully",
-        description: wardrobeItemsAdded 
-          ? "Your items have been added to your wardrobe"
-          : "Your order has been processed, but there was an issue adding items to your wardrobe"
+        description: "Your items have been added to your wardrobe"
       });
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error processing order:', error);
-      
-      // Extract and log more detailed error information
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-      
-      // Check for specific error types
-      const errorMessage = error?.message || 'An unknown error occurred';
-      const isNetworkError = errorMessage.includes('network') || errorMessage.includes('fetch');
-      const isPermissionError = errorMessage.includes('permission') || errorMessage.includes('access');
-      const isTableError = errorMessage.includes('relation') || errorMessage.includes('table');
-      
-      let userErrorMessage = "Failed to process your order";
-      
-      if (isNetworkError) {
-        userErrorMessage = "Network error. Please check your connection and try again.";
-      } else if (isPermissionError) {
-        userErrorMessage = "You don't have permission to complete this action.";
-      } else if (isTableError) {
-        userErrorMessage = "System error. The store database is currently unavailable.";
-      }
-      
       toast({
         variant: "destructive",
         title: "Error",
-        description: userErrorMessage
+        description: "Failed to process your order"
       });
     } finally {
       setProcessingOrder(false);
