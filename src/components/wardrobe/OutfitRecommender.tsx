@@ -82,6 +82,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const { toast } = useToast();
   const [outfitDescription, setOutfitDescription] = useState('');
   const [outfit, setOutfit] = useState<any>(null);
+  const [recommendationId, setRecommendationId] = useState<string | null>(null);
 
   // Event form state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -431,6 +432,11 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       throw new Error('Invalid recommendation format received');
     }
     
+    // Save the recommendation ID if available
+    if (responseData.recommendationId) {
+      setRecommendationId(responseData.recommendationId);
+    }
+    
     // Save the outfit description if available
     setOutfitDescription(responseData.outfit.description || '');
     
@@ -740,16 +746,28 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </CardContent>
             </Card>
 
-            {showChat && (
+            {showChat && recommendationId && (
               <OutfitChat 
                 userId={userId} 
-                outfitId={recommendation[0].id}
-                outfitDetails={recommendation.map(item => ({
-                  ...item,
-                  styling_notes: item.styling_notes || '',
-                  styling_tips: item.styling_tips || []
-                }))}
+                outfitId={recommendationId}
+                outfitDetails={{
+                  description: outfitDescription,
+                  items: recommendation,
+                  styling_tips: recommendation[0]?.styling_tips || []
+                }}
               />
+            )}
+            {showChat && !recommendationId && (
+              <div className="p-4 bg-yellow-50 rounded-md shadow my-4">
+                <p className="text-amber-800">Unable to access outfit details. Please try generating a new recommendation.</p>
+                <Button 
+                  onClick={() => setShowChat(false)} 
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Go Back
+                </Button>
+              </div>
             )}
           </div>
         )}

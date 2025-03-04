@@ -251,20 +251,34 @@ ${JSON.stringify(filteredStoreItems, null, 2)}`;
             }
           });
 
-          const { error: saveError } = await supabase
+          // Insert and retrieve the ID of the newly created recommendation
+          const { data: savedRecommendation, error: saveError } = await supabase
             .from('outfit_recommendations')
             .insert({
               event_id: eventId,
               user_id: userId,
               recommendation: recommendation.outfit,
               created_at: new Date().toISOString()
-            });
+            })
+            .select('id')
+            .single();
 
           if (saveError) {
             console.error('Error saving recommendation:', saveError);
+            return NextResponse.json(
+              { 
+                error: 'Failed to save recommendation',
+                details: saveError.message
+              },
+              { status: 500 }
+            );
           }
 
-          return NextResponse.json(recommendation);
+          // Include the recommendation ID in the response
+          return NextResponse.json({
+            ...recommendation,
+            recommendationId: savedRecommendation?.id
+          });
 
         } catch (parseError) {
           console.error('Error parsing AI response:', parseError);
@@ -279,7 +293,30 @@ ${JSON.stringify(filteredStoreItems, null, 2)}`;
               .trim();
 
             recommendation = JSON.parse(fixedResponse);
-            return NextResponse.json(recommendation);
+            
+            // Save the recommendation to get its ID even in the recovery path
+            const { data: savedRecommendation, error: saveError } = await supabase
+              .from('outfit_recommendations')
+              .insert({
+                event_id: eventId,
+                user_id: userId,
+                recommendation: recommendation.outfit,
+                created_at: new Date().toISOString()
+              })
+              .select('id')
+              .single();
+
+            if (saveError) {
+              console.error('Error saving recommendation (recovery path):', saveError);
+              // Continue even if saving fails in the recovery path
+            }
+
+            // Include the recommendation ID in the response if available
+            return NextResponse.json({
+              ...recommendation,
+              recommendationId: savedRecommendation?.id
+            });
+
           } catch (recoveryError) {
             return NextResponse.json(
               { 

@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface OutfitChatProps {
   userId: string;
@@ -36,12 +37,32 @@ interface OutfitChatProps {
 export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [chats, setChats] = useState<OutfitChatType[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chats, setChats] = useState<OutfitChatType[]>([]);
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
-
+  const { toast } = useToast();
+  
+  // Determine if this is a general fashion chat or outfit-specific chat
+  const isGeneralChat = !outfitId;
+  
+  // Set initial welcome message for a new chat
+  useEffect(() => {
+    if (messages.length === 0 && !activeChatId) {
+      // Add system welcome message based on chat type
+      const welcomeMessage = isGeneralChat 
+        ? "Hello! I'm your fashion assistant. Ask me any fashion-related questions." 
+        : "Hello! I'm your outfit stylist. Ask me questions about styling this outfit, alternatives, or accessories.";
+      
+      setMessages([{
+        role: 'assistant',
+        content: welcomeMessage,
+        created_at: new Date().toISOString()
+      }]);
+    }
+  }, [isGeneralChat, messages.length, activeChatId]);
+  
   useEffect(() => {
     loadChats();
   }, [userId]);
@@ -57,33 +78,54 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const loadChats = async () => {
-    const { data } = await supabase
-      .from('outfit_chats')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      setChats(data);
-      if (data.length > 0 && !activeChatId) {
+    try {
+      const { data, error } = await supabase
+        .from('outfit_chats')
+        .select('*')
+        .eq('user_id', userId)
+        // For general chats, look for null outfit_recommendation_id
+        // For specific chats, filter by the outfitId
+        .eq(isGeneralChat ? 'outfit_recommendation_id' : 'id', isGeneralChat ? null : outfitId)
+        .order('last_message_at', { ascending: false });
+
+      if (error) throw error;
+      setChats(data || []);
+      
+      // If we found chats and don't have an active one, set the first one active
+      if (data?.length && !activeChatId) {
         setActiveChatId(data[0].id);
+        loadMessages(data[0].id);
       }
+    } catch (error) {
+      console.error('Error loading chats:', error);
     }
   };
 
   const loadMessages = async (chatId: string) => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-    
-    if (data) {
-      setMessages(data);
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setMessages(data);
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast({
+        title: "Error loading messages",
+        description: "Could not retrieve chat history. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -95,53 +137,108 @@ export const OutfitChat = ({ userId, outfitId, outfitDetails }: OutfitChatProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!input.trim()) return;
 
+    // Store the message to send
+    const messageToSend = input;
+    
     try {
       setLoading(true);
-      const newMessage: ChatMessage = {
+      
+      // Add user message to the UI immediately
+      const userMessage: ChatMessage = {
         role: 'user',
-        content: input,
+        content: messageToSend,
         created_at: new Date().toISOString(),
       };
-
-      setMessages(prev => [...prev, newMessage]);
+      
+      setMessages(prev => [...prev, userMessage]);
       setInput('');
-
+      
+      // Determine if an outfit link is required for this chat
+      const requireOutfitLink = !!outfitId;
+      
+      // Create a safe version of outfitDetails with checks to prevent null/undefined errors
+      let safeOutfitDetails = null;
+      
+      if (outfitDetails) {
+        // Check if outfitDetails has valid data structure before using it
+        const hasValidItems = outfitDetails.items && Array.isArray(outfitDetails.items) && outfitDetails.items.length > 0;
+        
+        safeOutfitDetails = {
+          description: outfitDetails.description || '',
+          items: hasValidItems ? outfitDetails.items : [],
+          styling_tips: Array.isArray(outfitDetails.styling_tips) ? outfitDetails.styling_tips : [],
+          requireOutfitLink
+        };
+      }
+      
+      // Send the message to the API
       const response = await fetch('/api/outfit-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           userId,
           outfitId,
-          message: input,
+          message: messageToSend,
           previousMessages: messages,
           chatId: activeChatId,
-          outfitDetails,
+          outfitDetails: safeOutfitDetails
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
+      // Parse the response JSON only once
+      const responseData = await response.json();
       
-      if (!activeChatId && data.chatId) {
-        setActiveChatId(data.chatId);
+      if (!response.ok) {
+        console.error('API error:', responseData);
+        toast({
+          title: "Error sending message",
+          description: responseData.error || "Failed to send message. Please try again.",
+          variant: "destructive"
+        });
+        
+        // Add the error as a system message instead of throwing error
+        // This allows the user to continue the conversation
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `I'm sorry, I encountered an error: ${responseData.error || "Failed to process your message"}. Please try again or ask a different question.`,
+          created_at: new Date().toISOString(),
+        }]);
+        return; // Return instead of throwing to keep the UI responsive
+      }
+      
+      if (!activeChatId && responseData.chatId) {
+        setActiveChatId(responseData.chatId);
       }
 
       const aiMessage: ChatMessage = {
         role: 'assistant',
-        content: data.message,
+        content: responseData.message,
         created_at: new Date().toISOString(),
       };
 
       setMessages(prev => [...prev, aiMessage]);
       scrollToBottom();
+
+      // Update chat list
+      loadChats();
     } catch (error) {
       console.error('Chat error:', error);
-      setError('Failed to send message');
+      toast({
+        title: "Chat Error",
+        description: error instanceof Error ? error.message : "Something went wrong with the chat",
+        variant: "destructive"
+      });
+      
+      // Add a fallback message to the UI
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm sorry, something went wrong. Please try again in a moment.",
+        created_at: new Date().toISOString(),
+      }]);
     } finally {
       setLoading(false);
     }
