@@ -8,7 +8,7 @@ import { User } from '@/types/auth';
 import Link from 'next/link';
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 
 export const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Link 
@@ -21,6 +21,7 @@ export const NavLink = ({ href, children }: { href: string; children: React.Reac
 
 export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
@@ -57,15 +58,21 @@ export const Navbar = () => {
               bodyType: profile.body_type,
               measurements: profile.measurements,
             });
+            
+            // Check if user is admin
+            setIsAdmin(profile.role === 'admin');
           } else {
             setUser(null);
+            setIsAdmin(false);
           }
         } else {
           setUser(null);
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error('Auth check error:', error);
         setUser(null);
+        setIsAdmin(false);
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +87,7 @@ export const Navbar = () => {
         checkAuthState();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        setIsAdmin(false);
       }
     });
 
@@ -127,6 +135,14 @@ export const Navbar = () => {
               <>
                 <NavLink href="/dashboard">Dashboard</NavLink>
                 <NavLink href="/dashboard/wardrobe">Wardrobe</NavLink>
+                {isAdmin && (
+                  <NavLink href="/admin">
+                    <div className="flex items-center gap-1">
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin
+                    </div>
+                  </NavLink>
+                )}
                 <Button
                   onClick={handleSignOut}
                   variant="ghost"

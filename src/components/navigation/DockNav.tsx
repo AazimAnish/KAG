@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shirt, ShoppingBag, Home, Store, User2, Wand2 } from 'lucide-react';
+import { Shirt, ShoppingBag, Home, Store, User2, Wand2, ShieldCheck } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import { ProfileDropdown } from '../layout/ProfileDropdown';
 import { Button } from '../ui/button';
@@ -79,6 +79,7 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
 
 export const DockNav = () => {
     const [user, setUser] = useState<User | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const pathname = usePathname();
     const { theme } = useTheme();
@@ -115,13 +116,18 @@ export const DockNav = () => {
                             bodyType: profile.body_type,
                             measurements: profile.measurements,
                         });
+                        
+                        // Check if user is admin
+                        setIsAdmin(profile.role === 'admin');
                     }
                 } else {
                     setUser(null);
+                    setIsAdmin(false);
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
                 setUser(null);
+                setIsAdmin(false);
             } finally {
                 setIsLoading(false);
             }
@@ -136,6 +142,7 @@ export const DockNav = () => {
                     checkAuthState();
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null);
+                    setIsAdmin(false);
                 }
             }
         );
@@ -145,7 +152,8 @@ export const DockNav = () => {
         };
     }, []);
 
-    const navItems: NavItemProps[] = [
+    // Base navigation items
+    const baseNavItems: NavItemProps[] = [
         { 
             href: '/', 
             icon: <Home className="w-5 h-5 text-foreground" />, 
@@ -177,6 +185,17 @@ export const DockNav = () => {
             isActive: pathname.includes('/cart') 
         },
     ];
+    
+    // Add admin button for admin users
+    const navItems = [...baseNavItems];
+    if (isAdmin) {
+        navItems.push({ 
+            href: '/admin', 
+            icon: <ShieldCheck className="w-5 h-5 text-foreground" />, 
+            label: 'Admin', 
+            isActive: pathname.includes('/admin') 
+        });
+    }
 
     return (
         <div className="fixed top-0 left-0 right-0 flex justify-between items-center z-50 p-4 bg-transparent">
