@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress"; // Import Progress component
 
 interface Product {
   id: string;
@@ -39,16 +40,28 @@ interface Product {
   size: string;
   color: string;
   category: string;
-  gender: string;
-  images: string[];
-  stock: number;
+  type: string;
+  brand: string;
+  image_url: string;
+  in_stock: boolean;
   created_at: string;
+  updated_at: string;
+}
+
+interface UploadStatus {
+  stage: 'idle' | 'uploading' | 'analyzing' | 'saving';
+  progress: number;
+  message: string;
 }
 
 export const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
+    stage: 'idle',
+    progress: 0,
+    message: '',
+  });
   const { toast } = useToast();
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -57,10 +70,12 @@ export const ProductManagement = () => {
     size: '',
     color: '',
     category: '',
-    gender: '',
-    stock: '',
+    type: '',
+    brand: '',
+    in_stock: true,
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -86,12 +101,18 @@ export const ProductManagement = () => {
     }
   };
 
+  const updateUploadStatus = (stage: UploadStatus['stage'], progress: number, message: string) => {
+    setUploadStatus({ stage, progress, message });
+  };
+
   const handleImageUpload = async (file: File) => {
     try {
       // First verify user is authenticated and admin
+      updateUploadStatus('uploading', 10, 'Verifying authorization...');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Unauthorized');
 
+      updateUploadStatus('uploading', 20, 'Checking admin status...');
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -105,11 +126,13 @@ export const ProductManagement = () => {
         throw new Error('File size must be less than 10MB');
       }
 
+      updateUploadStatus('uploading', 30, 'Preparing file for upload...');
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `store/${fileName}`;
 
       // Upload to Supabase Storage
+      updateUploadStatus('uploading', 40, 'Uploading to storage...');
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('wardrobe')
         .upload(filePath, file, {
@@ -128,6 +151,7 @@ export const ProductManagement = () => {
       }
 
       // Get public URL and analyze image
+      updateUploadStatus('uploading', 60, 'Getting public URL...');
       const { data: { publicUrl } } = supabase.storage
         .from('wardrobe')
         .getPublicUrl(uploadData.path);
@@ -137,6 +161,7 @@ export const ProductManagement = () => {
       }
 
       // Analyze the image using the analyze-clothing API
+      updateUploadStatus('analyzing', 70, 'Analyzing image with AI...');
       const formData = new FormData();
       formData.append('image', file);
 
@@ -150,18 +175,17 @@ export const ProductManagement = () => {
         throw new Error(errorData.error || 'Failed to analyze image');
       }
 
+      updateUploadStatus('analyzing', 90, 'Processing AI results...');
       const analysis = await response.json();
       
       // Destructure tags array with default values
-      const [color = 'unknown', pattern = 'solid', style = 'casual', fit = 'regular'] = analysis.tags || [];
+      const [color = 'unknown'] = analysis.tags || [];
 
+      updateUploadStatus('saving', 100, 'Successfully processed image!');
       return { 
         url: publicUrl, 
         category: analysis.type || 'unknown',
-        color,
-        pattern,
-        style,
-        fit
+        color
       };
 
     } catch (error) {
@@ -178,16 +202,17 @@ export const ProductManagement = () => {
       }
 
       // Validate form data
-      if (!newProduct.name || !newProduct.price || !newProduct.stock) {
+      if (!newProduct.name || !newProduct.price) {
         throw new Error('Please fill in all required fields');
       }
 
-      setUploading(true);
+      updateUploadStatus('uploading', 0, 'Starting upload process...');
 
       // Upload and analyze image
-      const { url, category, color, pattern, style, fit } = await handleImageUpload(selectedImage);
+      const { url, category, color } = await handleImageUpload(selectedImage);
 
       // Create product with uploaded image URL and analysis results
+      updateUploadStatus('saving', 95, 'Saving product to database...');
       const { error: insertError } = await supabase
         .from('products')
         .insert([
@@ -198,13 +223,12 @@ export const ProductManagement = () => {
             size: newProduct.size,
             color: color,
             category: category,
-            gender: newProduct.gender,
-            pattern: pattern,
-            style: style,
-            fit: fit,
-            images: [url],
-            stock: parseInt(newProduct.stock),
+            type: newProduct.type,
+            brand: newProduct.brand || '',
+            image_url: url,
+            in_stock: newProduct.in_stock,
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           }
         ]);
 
@@ -226,10 +250,13 @@ export const ProductManagement = () => {
         size: '',
         color: '',
         category: '',
-        gender: '',
-        stock: '',
+        type: '',
+        brand: '',
+        in_stock: true,
       });
       setSelectedImage(null);
+      updateUploadStatus('idle', 0, '');
+      setDialogOpen(false);
       loadProducts();
 
     } catch (error) {
@@ -239,8 +266,7 @@ export const ProductManagement = () => {
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to add product"
       });
-    } finally {
-      setUploading(false);
+      updateUploadStatus('idle', 0, '');
     }
   };
 
@@ -248,7 +274,7 @@ export const ProductManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className={`text-2xl font-bold ${styles.primaryText}`}>Product Management</h2>
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#D98324 ] hover:bg-[#D98324 ]/80">
               <Plus className="h-4 w-4 mr-2" />
@@ -299,37 +325,74 @@ export const ProductManagement = () => {
                 required
               />
               <Select
-                value={newProduct.gender}
-                onValueChange={(value) => setNewProduct({ ...newProduct, gender: value })}
+                value={newProduct.category}
+                onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Gender" />
+                  <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {['Men', 'Women', 'Unisex'].map((gender) => (
-                    <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                  {['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Accessories', 'Shoes'].map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={newProduct.type}
+                onValueChange={(value) => setNewProduct({ ...newProduct, type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['T-Shirt', 'Shirt', 'Blouse', 'Sweater', 'Jeans', 'Pants', 'Skirt', 'Dress', 'Jacket', 'Coat'].map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Input
-                type="number"
-                placeholder="Stock"
-                value={newProduct.stock}
-                onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                required
+                placeholder="Brand"
+                value={newProduct.brand}
+                onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
               />
+              <Select
+                value={newProduct.in_stock.toString()}
+                onValueChange={(value) => setNewProduct({ ...newProduct, in_stock: value === 'true' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Stock Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">In Stock</SelectItem>
+                  <SelectItem value="false">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 type="file"
                 accept="image/*"
                 onChange={(e) => setSelectedImage(e.target.files?.[0] || null)}
                 required
               />
-              <Button type="submit" className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80">
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Add Product'
-                )}
+              
+              {uploadStatus.stage !== 'idle' && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{uploadStatus.message}</span>
+                    <span>{uploadStatus.progress}%</span>
+                  </div>
+                  <Progress value={uploadStatus.progress} className="h-2" />
+                </div>
+              )}
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80"
+                disabled={uploadStatus.stage !== 'idle'}
+              >
+                {uploadStatus.stage !== 'idle' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {uploadStatus.stage !== 'idle' ? 'Processing...' : 'Add Product'}
               </Button>
             </form>
           </DialogContent>
@@ -341,31 +404,47 @@ export const ProductManagement = () => {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Price</TableHead>
-            <TableHead>Stock</TableHead>
+            <TableHead>In Stock</TableHead>
             <TableHead>Category</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>${product.price}</TableCell>
-              <TableCell>{product.stock}</TableCell>
-              <TableCell>{product.category}</TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
-                  onClick={() => {/* Add edit functionality */}}
-                >
-                  Edit
-                </Button>
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
               </TableCell>
             </TableRow>
-          ))}
+          ) : products.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-4">
+                No products found
+              </TableCell>
+            </TableRow>
+          ) : (
+            products.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>${product.price}</TableCell>
+                <TableCell>{product.in_stock ? 'Yes' : 'No'}</TableCell>
+                <TableCell>{product.category}</TableCell>
+                <TableCell>{product.type}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    className={`${styles.glassmorph} hover:bg-[#D98324 ]/20`}
+                    onClick={() => {/* Add edit functionality */}}
+                  >
+                    Edit
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>
   );
-}; 
+};

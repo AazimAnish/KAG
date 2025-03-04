@@ -15,58 +15,58 @@ const features = [
     title: "AI Wardrobe Analysis",
     description: "Smart organization and categorization of your clothing items",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Shirt className="w-12 h-12 text-[#D98324]" />
+      <Shirt className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Shirt className="h-4 w-4 text-[#D98324]" />,
+    icon: <Shirt className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
   },
   {
     title: "Style Recommendations",
     description: "Personalized outfit suggestions based on your preferences",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Brain className="w-12 h-12 text-[#D98324]" />
+      <Brain className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Brain className="h-4 w-4 text-[#D98324]" />,
+    icon: <Brain className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
   },
   {
     title: "Virtual Try-On",
     description: "See how outfits look on you before making decisions",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Camera className="w-12 h-12 text-[#D98324]" />
+      <Camera className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Camera className="h-4 w-4 text-[#D98324]" />,
+    icon: <Camera className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
   },
   {
     title: "Occasion-based Styling",
     description: "Perfect outfits for every event and occasion in your calendar",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Calendar className="w-12 h-12 text-[#D98324]" />
+      <Calendar className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Calendar className="h-4 w-4 text-[#D98324]" />,
+    icon: <Calendar className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
     className: "md:col-span-2"
   },
   {
     title: "Color Analysis",
     description: "Find the perfect color combinations that work for you",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Palette className="w-12 h-12 text-[#D98324]" />
+      <Palette className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Palette className="h-4 w-4 text-[#D98324]" />,
+    icon: <Palette className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
   },
   {
     title: "Smart Shopping",
     description: "Get personalized recommendations for new purchases",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <ShoppingBag className="w-12 h-12 text-[#D98324]" />
+      <ShoppingBag className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <ShoppingBag className="h-4 w-4 text-[#D98324]" />,
+    icon: <ShoppingBag className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
   },
   {
     title: "AI Style Evolution",
     description: "Watch your style evolve with smart AI-powered suggestions",
     header: <div className={`${styles.glassmorph} w-full h-full rounded-xl flex items-center justify-center`}>
-      <Sparkles className="w-12 h-12 text-[#D98324]" />
+      <Sparkles className="w-12 h-12 text-[#D98324] dark:text-[#D98324]" />
     </div>,
-    icon: <Sparkles className="h-4 w-4 text-[#D98324]" />,
+    icon: <Sparkles className="h-4 w-4 text-[#D98324] dark:text-[#D98324]" />,
     className: "md:col-span-2"
   },
 ];

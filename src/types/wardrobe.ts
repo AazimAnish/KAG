@@ -1,17 +1,23 @@
 export interface WardrobeItem {
   id: string;
   user_id: string;
-  image_url: string;
+  name: string;
+  description?: string;
+  category: string;
   type: string;
-  tags: string[];
-  status: 'processing' | 'completed' | 'failed';
+  color?: string;
+  size?: string;
+  brand?: string;
+  image_url: string;
   created_at: string;
+  updated_at: string;
 }
 
 export type FilterOptions = {
   type?: string;
-  occasion?: string;
+  category?: string;
   season?: string;
+  occasion?: string;
 };
 
 export const WARDROBE_CATEGORIES = {

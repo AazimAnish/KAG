@@ -45,6 +45,7 @@ export const BentoGridItem = ({
         "bg-[#EFDCAB]/10 dark:bg-[#443627]/50 backdrop-blur-lg",
         "border border-[#D98324]/20",
         "justify-between flex flex-col space-y-4",
+        "text-[#443627] dark:text-[#EFDCAB]",
         className
       )}
     >

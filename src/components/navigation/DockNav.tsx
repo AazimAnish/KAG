@@ -11,6 +11,7 @@ import { Button } from '../ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { User } from '@/types/auth';
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useTheme } from "next-themes";
 
 interface NavItemProps {
     href: string;
@@ -21,6 +22,15 @@ interface NavItemProps {
 
 const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
     const [isHovered, setIsHovered] = useState(false);
+    const { theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // Wait until mounted to ensure we have access to theme
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isDark = mounted && theme === 'dark';
 
     return (
         <Link href={href}>
@@ -34,7 +44,10 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                         relative px-4 py-2 
                         rounded-full 
                         transition-colors
-                        ${isActive ? 'bg-[#D98324]/20' : 'hover:bg-[#D98324]/20'}
+                        ${isActive 
+                            ? isDark ? 'bg-[#D98324]/20' : 'bg-[#D98324]/30' 
+                            : isDark ? 'hover:bg-[#D98324]/20' : 'hover:bg-[#D98324]/30'
+                        }
                     `}
                     whileHover={{ scale: 1.4 }}
                     whileTap={{ scale: 0.95 }}
@@ -45,7 +58,14 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
                 <AnimatePresence>
                     {isHovered && (
                         <motion.span
-                            className="absolute top-full mt-2 px-2 py-1 bg-[#443627]/80 text-[#EFDCAB] text-xs rounded whitespace-nowrap"
+                            className={`
+                                absolute top-full mt-2 px-2 py-1 
+                                ${isDark 
+                                    ? 'bg-[#443627]/80 text-[#EFDCAB]' 
+                                    : 'bg-[#EFDCAB]/90 text-[#443627]'
+                                } 
+                                text-xs rounded whitespace-nowrap
+                            `}
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
@@ -62,6 +82,15 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
 export const DockNav = () => {
     const [user, setUser] = useState<User | null>(null);
     const pathname = usePathname();
+    const { theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    // Wait until mounted to avoid hydration mismatch
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const isDark = mounted && theme === 'dark';
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -96,11 +125,36 @@ export const DockNav = () => {
     }, []);
 
     const navItems: NavItemProps[] = [
-        { href: '/', icon: <Home className="w-5 h-5 text-[#EFDCAB]" />, label: 'Home', isActive: pathname === '/' },
-        { href: '/dashboard/wardrobe', icon: <Shirt className="w-5 h-5 text-[#EFDCAB]" />, label: 'Wardrobe', isActive: pathname.includes('/wardrobe') },
-        { href: '/store', icon: <Store className="w-5 h-5 text-[#EFDCAB]" />, label: 'Store', isActive: pathname.includes('/store') },
-        { href: '/dashboard/kag-ai', icon: <Wand2 className="w-5 h-5 text-[#EFDCAB]" />, label: 'KAG-AI', isActive: pathname.includes('/kag-ai') },
-        { href: '/cart', icon: <ShoppingBag className="w-5 h-5 text-[#EFDCAB]" />, label: 'Cart', isActive: pathname.includes('/cart') },
+        { 
+            href: '/', 
+            icon: <Home className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            label: 'Home', 
+            isActive: pathname === '/' 
+        },
+        { 
+            href: '/dashboard/wardrobe', 
+            icon: <Shirt className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            label: 'Wardrobe', 
+            isActive: pathname.includes('/wardrobe') 
+        },
+        { 
+            href: '/store', 
+            icon: <Store className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            label: 'Store', 
+            isActive: pathname.includes('/store') 
+        },
+        { 
+            href: '/dashboard/kag-ai', 
+            icon: <Wand2 className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            label: 'KAG-AI', 
+            isActive: pathname.includes('/kag-ai') 
+        },
+        { 
+            href: '/cart', 
+            icon: <ShoppingBag className={`w-5 h-5 ${isDark ? 'text-[#EFDCAB]' : 'text-[#443627]'}`} />, 
+            label: 'Cart', 
+            isActive: pathname.includes('/cart') 
+        },
     ];
 
     return (
@@ -124,14 +178,14 @@ export const DockNav = () => {
                     rounded-full 
                     flex items-center gap-4
                     backdrop-blur-md
-                    border border-[#D98324]/20
+                    ${isDark ? 'border border-[#D98324]/20' : 'border border-[#D98324]/30'}
                     shadow-lg
                 `}>
                     {navItems.map((item, index) => (
                         <div key={item.href} className="flex items-center">
                             <NavItem {...item} />
                             {index < navItems.length - 1 && (
-                                <div className="w-px h-6 bg-[#D98324]/20" />
+                                <div className={`w-px h-6 ${isDark ? 'bg-[#D98324]/20' : 'bg-[#D98324]/30'}`} />
                             )}
                         </div>
                     ))}
@@ -143,7 +197,7 @@ export const DockNav = () => {
                             <Link href="/signin">
                                 <Button
                                     variant="ghost"
-                                    className="text-[#EFDCAB] hover:bg-[#D98324]/20"
+                                    className={`${isDark ? 'text-[#EFDCAB] hover:bg-[#D98324]/20' : 'text-[#443627] hover:bg-[#D98324]/30'}`}
                                 >
                                     Sign In
                                 </Button>
@@ -163,4 +217,4 @@ export const DockNav = () => {
             <div className="w-[68px]" />
         </div>
     );
-}; 
+};

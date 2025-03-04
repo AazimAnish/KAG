@@ -3,16 +3,23 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, AlertCircle, History } from 'lucide-react';
+import { Loader2, AlertCircle, History } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/lib/supabase/client';
 
-interface OutfitTryOnProps {
+interface OutfitTryOnDisplayProps {
   userId: string;
-  outfitImageUrl: string;
-  userImageUrl: string;
+  userImage: string;
+  topOutfit?: {
+    id: string;
+    image_url: string;
+  };
+  bottomOutfit?: {
+    id: string;
+    image_url: string;
+  };
 }
 
 interface TryOnHistory {
@@ -23,9 +30,9 @@ interface TryOnHistory {
   bottom_image_url: string | null;
 }
 
-export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryOnProps) => {
+export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit }: OutfitTryOnDisplayProps) => {
   const [loading, setLoading] = useState(false);
-  const [tryOnImage, setTryOnImage] = useState<string | null>(null);
+  const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processingStage, setProcessingStage] = useState<string>('');
   const [tryOnHistory, setTryOnHistory] = useState<TryOnHistory[]>([]);
@@ -62,31 +69,33 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
       setError(null);
       setProcessingStage('Starting try-on process...');
 
-      // Validate URLs before making the request
-      if (!userImageUrl || !outfitImageUrl) {
-        throw new Error('Missing image URLs for try-on');
+      // Check if we have the required data
+      if (!userId || !userImage || (!topOutfit?.image_url && !bottomOutfit?.image_url)) {
+        throw new Error('Missing required data for try-on');
       }
 
-      // Log the start of the request
       console.log('Generating try-on for:', {
         userId,
-        outfitUrl: outfitImageUrl.substring(0, 50) + '...',
-        userUrl: userImageUrl.substring(0, 50) + '...'
+        userImage: userImage.substring(0, 50) + '...',
+        topOutfit: topOutfit?.image_url ? topOutfit.image_url.substring(0, 50) + '...' : 'none',
+        bottomOutfit: bottomOutfit?.image_url ? bottomOutfit.image_url.substring(0, 50) + '...' : 'none'
       });
 
-      setProcessingStage('Sending request to AI service...');
+      setProcessingStage('Sending request to API...');
 
       const response = await fetch('/api/outfit-tryon', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           userId,
-          userImageUrl,
-          topImageUrl: outfitImageUrl, // We're treating all outfit images as tops for simplicity
+          userImageUrl: userImage,
+          topImageUrl: topOutfit?.image_url,
+          bottomImageUrl: bottomOutfit?.image_url,
         }),
       });
 
-      // Check if response is ok before parsing JSON
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
         throw new Error(errorData.error || `Server error: ${response.status}`);
@@ -95,13 +104,11 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
       setProcessingStage('Processing AI response...');
       const result = await response.json();
 
-      // Validate the result structure
       if (!result.resultImage?.url) {
         throw new Error('Invalid response format from server');
       }
 
-      // Set the try-on image and show success notification
-      setTryOnImage(result.resultImage.url);
+      setResultImage(result.resultImage.url);
       setProcessingStage('');
 
       // Refresh history after successful generation
@@ -112,13 +119,15 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
         description: "Virtual try-on completed successfully.",
         variant: "success",
       });
+
     } catch (error) {
-      // Handle errors gracefully
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      setError(errorMessage);
-      setProcessingStage('');
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'An unexpected error occurred while generating the try-on';
 
       console.error('Try-on error:', error);
+      setError(errorMessage);
+      setProcessingStage('');
 
       toast({
         title: "Error",
@@ -133,52 +142,58 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`${styles.glassmorph} rounded-lg p-6`}>
-          <h3 className={`${styles.primaryText} font-semibold mb-4`}>Your Photo</h3>
-          <div className="relative aspect-[3/4] w-full">
-            {userImageUrl ? (
+        {userImage && (
+          <div className={`${styles.glassmorph} rounded-lg p-6`}>
+            <h3 className={`${styles.primaryText} font-semibold mb-4`}>Your Photo</h3>
+            <div className="relative aspect-[3/4] w-full">
               <Image
-                src={userImageUrl}
+                src={userImage}
                 alt="User"
                 fill
                 className="rounded-lg object-cover"
               />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <AlertCircle className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className={`${styles.glassmorph} rounded-lg p-6`}>
-          <h3 className={`${styles.primaryText} font-semibold mb-4`}>Selected Outfit</h3>
-          <div className="relative aspect-[3/4] w-full">
-            {outfitImageUrl ? (
-              <Image
-                src={outfitImageUrl}
-                alt="Outfit"
-                fill
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <AlertCircle className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
+        {(topOutfit || bottomOutfit) && (
+          <div className={`${styles.glassmorph} rounded-lg p-6`}>
+            <h3 className={`${styles.primaryText} font-semibold mb-4`}>Selected Outfits</h3>
+            <div className="space-y-4">
+              {topOutfit && (
+                <div className="relative aspect-[3/4] w-full">
+                  <Image
+                    src={topOutfit.image_url}
+                    alt="Top"
+                    fill
+                    className="rounded-lg object-cover"
+                  />
+                </div>
+              )}
+              {bottomOutfit && (
+                <div className="relative aspect-[3/4] w-full">
+                  <Image
+                    src={bottomOutfit.image_url}
+                    alt="Bottom"
+                    fill
+                    className="rounded-lg object-cover"
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {(tryOnImage || loading) && (
+        {(resultImage || loading) && (
           <div className={`${styles.glassmorph} rounded-lg p-6`}>
             <h3 className={`${styles.primaryText} font-semibold mb-4`}>
               Result
               {loading && <Badge className="ml-2 bg-blue-500">Processing</Badge>}
             </h3>
             <div className="relative aspect-[3/4] w-full">
-              {tryOnImage ? (
+              {resultImage ? (
                 <Image
-                  src={tryOnImage}
+                  src={resultImage}
                   alt="Try-on Result"
                   fill
                   className="rounded-lg object-cover"
@@ -197,7 +212,7 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
       <div className="flex gap-4">
         <Button
           onClick={generateTryOn}
-          disabled={loading || !userImageUrl || !outfitImageUrl}
+          disabled={loading || !userImage || (!topOutfit && !bottomOutfit)}
           className="flex-1"
         >
           {loading ? (
@@ -205,13 +220,10 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Generating Try-On...
             </>
-          ) : tryOnImage ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </>
+          ) : resultImage ? (
+            'Generate Again'
           ) : (
-            'Try On This Outfit'
+            'Generate Try-On'
           )}
         </Button>
 
@@ -246,7 +258,7 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
                   alt={`Try-on from ${new Date(item.created_at).toLocaleDateString()}`}
                   fill
                   className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setTryOnImage(item.result_image_url)}
+                  onClick={() => setResultImage(item.result_image_url)}
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
                   {new Date(item.created_at).toLocaleDateString()}

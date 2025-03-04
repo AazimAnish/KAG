@@ -42,8 +42,7 @@ async function validateWardrobe(userId: string) {
   const { data: wardrobeItems, error } = await supabase
     .from('wardrobe_items')
     .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'completed');
+    .eq('user_id', userId);
 
   if (error) throw error;
 
@@ -114,87 +113,112 @@ ${JSON.stringify(wardrobeItems.map(item => ({
   image_url: item.image_url
 })), null, 2)}`;
 
-      const completion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          }
-        ],
-        model: "mixtral-8x7b-32768",
-        temperature: 0.5, // Reduced for more consistent output
-        max_tokens: 1024,
-        top_p: 1,
-        stream: false,
-        response_format: { type: "json_object" }
-      });
-
-      const response = completion.choices[0]?.message?.content || '';
-      let recommendation;
-
+      console.log('Sending prompt to Groq API...');
+      const startTime = Date.now();
+          
       try {
-        // Clean and validate the response
-        const cleanedResponse = response
-          .replace(/```json\s*|\s*```/g, '') // Remove markdown code blocks
-          .replace(/\n/g, ' ') // Remove newlines
-          .trim();
-
-        recommendation = JSON.parse(cleanedResponse);
-
-        // Validate the structure
-        if (!recommendation?.outfit?.items?.length) {
-          throw new Error('Invalid outfit structure');
-        }
-
-        // Validate each item has required fields
-        recommendation.outfit.items.forEach((item: { id: string; type: string; styling_notes: string; image_url: string }) => {
-          if (!item.id || !item.type || !item.styling_notes || !item.image_url) {
-            throw new Error('Missing required item fields');
-          }
+        // Set a timeout for the Groq API call - 30 seconds
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('AI request timed out')), 30000);
         });
+        
+        const completionPromise = groq.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            }
+          ],
+          model: "mixtral-8x7b-32768",
+          temperature: 0.5, // Reduced for more consistent output
+          max_tokens: 1024,
+          top_p: 1,
+          stream: false,
+          response_format: { type: "json_object" }
+        });
+        
+        const completion = await Promise.race([
+          completionPromise,
+          timeoutPromise
+        ]) as any; // Type assertion needed here
+        
+        console.log(`Groq API responded in ${Date.now() - startTime}ms`);
+        
+        const response = completion.choices[0]?.message?.content || '';
+        let recommendation;
 
-        // Save recommendation to database
-        const { error: saveError } = await supabase
-          .from('outfit_recommendations')
-          .insert({
-            event_id: eventId,
-            user_id: userId,
-            recommendation: recommendation.outfit,
-            created_at: new Date().toISOString()
+        try {
+          // Clean and validate the response
+          const cleanedResponse = response
+            .replace(/```json\s*|\s*```/g, '') // Remove markdown code blocks
+            .replace(/\n/g, ' ') // Remove newlines
+            .trim();
+
+          recommendation = JSON.parse(cleanedResponse);
+
+          // Validate the structure
+          if (!recommendation?.outfit?.items?.length) {
+            throw new Error('Invalid outfit structure');
+          }
+
+          // Validate each item has required fields
+          recommendation.outfit.items.forEach((item: { id: string; type: string; styling_notes: string; image_url: string }) => {
+            if (!item.id || !item.type || !item.styling_notes || !item.image_url) {
+              throw new Error('Missing required item fields');
+            }
           });
 
-        if (saveError) {
-          console.error('Error saving recommendation:', saveError);
-        }
+          // Save recommendation to database
+          const { error: saveError } = await supabase
+            .from('outfit_recommendations')
+            .insert({
+              event_id: eventId,
+              user_id: userId,
+              recommendation: recommendation.outfit,
+              created_at: new Date().toISOString()
+            });
 
-        return NextResponse.json(recommendation);
+          if (saveError) {
+            console.error('Error saving recommendation:', saveError);
+          }
 
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-        console.error('Raw response:', response);
-        
-        // Attempt to recover from common formatting issues
-        try {
-          const fixedResponse = response
-            .replace(/\\/g, '') // Remove escaped characters
-            .replace(/"\s*\+\s*"/g, '') // Fix concatenated strings
-            .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-            .replace(/([{\[]\s*),/g, '$1') // Remove leading commas
-            .trim();
-          
-          recommendation = JSON.parse(fixedResponse);
           return NextResponse.json(recommendation);
-        } catch (recoveryError) {
-          return NextResponse.json(
-            { 
-              error: 'Failed to generate recommendation',
-              details: 'Invalid response format'
-            },
-            { status: 500 }
-          );
-        }
-      }
 
+        } catch (parseError) {
+          console.error('Error parsing AI response:', parseError);
+          console.error('Raw response:', response);
+          
+          // Attempt to recover from common formatting issues
+          try {
+            const fixedResponse = response
+              .replace(/\\/g, '') // Remove escaped characters
+              .replace(/"\s*\+\s*"/g, '') // Fix concatenated strings
+              .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+              .replace(/([{\[]\s*),/g, '$1') // Remove leading commas
+              .trim();
+            
+            recommendation = JSON.parse(fixedResponse);
+            return NextResponse.json(recommendation);
+          } catch (recoveryError) {
+            return NextResponse.json(
+              { 
+                error: 'Failed to generate recommendation',
+                details: 'Invalid response format'
+              },
+              { status: 500 }
+            );
+          }
+        }
+      } catch (aiError) {
+        console.error('AI service error:', aiError);
+        return NextResponse.json(
+          { 
+            error: 'Failed to generate recommendation from AI service',
+            details: aiError instanceof Error ? aiError.message : 'AI service error'
+          },
+          { status: 500 }
+        );
+      }
     } catch (error) {
       if (error instanceof Error) {
         switch (error.message) {

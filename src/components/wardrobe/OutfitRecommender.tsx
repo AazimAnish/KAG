@@ -20,6 +20,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from '@/lib/supabase/client';
 import { OutfitSuggestion, OutfitEvent } from '@/types/wardrobe';
 import Image from 'next/image';
 import { OutfitChat } from '@/components/chat/OutfitChat';
@@ -40,51 +41,30 @@ import { User } from '@/types/auth';
 import { Loader2, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { Progress } from "@/components/ui/progress";
 
 interface OutfitRecommenderProps {
   userId: string;
 }
 
-interface WardrobeItem {
+interface ClothingItem {
   id: string;
   name: string;
-  description?: string;
   category: string;
+  color: string;
+  image_url: string;
   type: string;
-  color?: string;
-  size?: string;
-  brand?: string;
-  image_url?: string;
   styling_notes?: string;
   styling_tips?: string[];
   isStoreItem?: boolean;
   price?: number;
 }
 
-interface StoreItem {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  type: string;
-  color?: string;
-  size?: string;
-  brand?: string;
-  price?: number;
-  in_stock: boolean;
-  image_url?: string;
-}
-
 export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [loading, setLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState<WardrobeItem[]>([]);
+  const [generationStep, setGenerationStep] = useState<string>('');
+  const [generationProgress, setGenerationProgress] = useState<number>(0);
+  const [recommendation, setRecommendation] = useState<ClothingItem[]>([]);
   const [pastSuggestions, setPastSuggestions] = useState<OutfitSuggestion[]>([]);
   const [events, setEvents] = useState<OutfitEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -98,17 +78,22 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [showNewEvent, setShowNewEvent] = useState(true);
   const [showChat, setShowChat] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
-  const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
+  const [wardrobeItems, setWardrobeItems] = useState<ClothingItem[]>([]);
+  const [storeItems, setStoreItems] = useState<ClothingItem[]>([]);
   const { toast } = useToast();
+  const [outfitDescription, setOutfitDescription] = useState('');
+  const [outfit, setOutfit] = useState<any>(null);
+
+  // Event form state
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [eventType, setEventType] = useState<string>('');
+  const [eventDescription, setEventDescription] = useState<string>('');
 
   useEffect(() => {
-    if (userId) {
-      loadPastSuggestions();
-      loadEvents();
-      loadUser();
-      fetchWardrobeAndStoreItems();
-    }
+    loadPastSuggestions();
+    loadEvents();
+    loadUser();
+    fetchWardrobeAndStoreItems();
   }, [userId]);
 
   const loadPastSuggestions = async () => {
@@ -160,86 +145,146 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
 
   const fetchWardrobeAndStoreItems = async () => {
     try {
-      const [wardrobeResult, storeResult] = await Promise.all([
-        supabase
-          .from('wardrobe_items')
-          .select('*')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false })
-      ]);
+      // Check if tables exist first
+      const { data: tables } = await supabase
+        .from('pg_tables')
+        .select('tablename')
+        .in('tablename', ['wardrobe_items', 'products']);
 
-      if (wardrobeResult.error) throw wardrobeResult.error;
-      if (storeResult.error) throw storeResult.error;
+      // Fetch wardrobe items with error handling
+      const wardrobeResult = await supabase
+        .from('wardrobe_items')
+        .select('id, type, image_url, category, color')
+        .eq('user_id', userId);
 
-      setWardrobeItems(wardrobeResult.data || []);
-      setStoreItems(storeResult.data || []);
+      if (wardrobeResult.error) {
+        console.error('Wardrobe fetch error:', wardrobeResult.error.message);
+      } else {
+        setWardrobeItems(wardrobeResult.data?.map(item => ({
+          id: item.id,
+          name: item.type,
+          category: item.category || item.type,
+          color: item.color || '',
+          image_url: item.image_url,
+          type: item.type
+        })) || []);
+      }
+
+      // Fetch store items with error handling
+      const storeResult = await supabase
+        .from('products')
+        .select('id, name, description, price, image_url, category, color')
+        .eq('in_stock', true);
+
+      if (storeResult.error) {
+        console.error('Store fetch error:', storeResult.error.message);
+      } else {
+        setStoreItems(storeResult.data?.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          color: item.color || '',
+          image_url: item.image_url,
+          type: item.category,
+          price: item.price,
+          isStoreItem: true
+        })) || []);
+      }
+
     } catch (error) {
-      console.error('Error fetching items:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch items');
+      console.error('Database connection error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to connect to database"
+      });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setOutfit(null);
     setError(null);
-    setShowChat(false);
+    setLoading(true);
+    setGenerationStep("Saving event details...");
+    setGenerationProgress(10);
 
     try {
-      // Save event details
+      // Save the event first
       const { data: eventData, error: eventError } = await supabase
         .from('events')
         .insert({
+          date: eventDetails.date,
+          event_type: eventDetails.event_type,
+          description: eventDetails.description,
+          title: eventDetails.title,
           user_id: userId,
-          ...eventDetails,
         })
         .select()
         .single();
 
-      if (eventError) throw eventError;
-
-      // Get outfit recommendation
-      const response = await fetch('/api/outfit-recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          eventId: eventData.id,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to get recommendation');
+      if (eventError) {
+        throw new Error('Failed to save event');
       }
 
-      const newRecommendation = await response.json();
-      
-      if (!newRecommendation?.recommendation?.items) {
-        throw new Error('Invalid recommendation format received');
-      }
+      setGenerationStep("Analyzing your wardrobe...");
+      setGenerationProgress(30);
 
-      setRecommendation(newRecommendation.recommendation.items.map((item: any) => ({
-        id: item.id || '',
-        name: item.type || '',
-        category: item.type || '',
-        color: item.color || '',
-        image_url: item.image_url || '',
-        type: item.type || '',
-        styling_notes: item.styling_notes || '',
-        styling_tips: item.styling_tips || []
-      })));
-      
-      setShowChat(true);
-      await loadPastSuggestions();
-      setShowNewEvent(false);
+      // Set a timeout for the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+      try {
+        // Call the outfit recommendation endpoint
+        setGenerationStep("Generating recommendations...");
+        setGenerationProgress(50);
+
+        const response = await fetch('/api/outfit-recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            eventId: eventData.id,
+            userId: userId,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        setGenerationProgress(80);
+        setGenerationStep("Processing response...");
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          // Handle specific API error codes
+          if (errorData.code === 'PROFILE_NOT_FOUND') {
+            throw new Error('Please create your profile before getting recommendations.');
+          } else if (errorData.code === 'PROFILE_INCOMPLETE') {
+            throw new Error('Please complete your profile details before getting recommendations.');
+          } else if (errorData.code === 'WARDROBE_EMPTY') {
+            throw new Error('Please add some items to your wardrobe before getting recommendations.');
+          } else {
+            throw new Error(errorData.error || 'Failed to get recommendations');
+          }
+        }
+
+        const responseData = await response.json();
+        setGenerationProgress(100);
+        setGenerationStep("Complete!");
+        
+        // Process the response
+        processRecommendation(responseData);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw fetchError;
+      }
     } catch (error) {
       console.error('Error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
-    } finally {
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
       setLoading(false);
     }
   };
@@ -347,7 +392,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
       // Your existing recommendation logic here
       // For example, randomly selecting items from different categories
       const categories = ['top', 'bottom', 'outerwear', 'shoes', 'accessories'];
-      const outfit: WardrobeItem[] = [];
+      const outfit: ClothingItem[] = [];
 
       categories.forEach(category => {
         const categoryItems = allItems.filter(item => item.category.toLowerCase() === category);
@@ -368,6 +413,41 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Function to process the recommendation data
+  const processRecommendation = (responseData: any) => {
+    if (!responseData?.outfit?.items) {
+      throw new Error('Invalid recommendation format received');
+    }
+    
+    // Save the outfit description if available
+    setOutfitDescription(responseData.outfit.description || '');
+    
+    // Map the items to our expected format
+    setRecommendation(responseData.outfit.items.map((item: any) => ({
+      id: item.id || '',
+      name: item.type || '',
+      category: item.type || '',
+      color: '',  // This might not be provided in the API response
+      image_url: item.image_url || '',
+      type: item.type || '',
+      styling_notes: item.styling_notes || '',
+      styling_tips: responseData.outfit.styling_tips || []
+    })));
+    
+    // Set the outfit data for display
+    setOutfit({
+      description: responseData.outfit.description,
+      items: responseData.outfit.items,
+      styling_tips: responseData.outfit.styling_tips
+    });
+    
+    setShowChat(true);
+    setShowNewEvent(false);
+    
+    // Load past suggestions if needed
+    loadPastSuggestions();
   };
 
   return (
@@ -526,6 +606,16 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 >
                   {loading ? "Generating..." : "Get Recommendations"}
                 </Button>
+                
+                {loading && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between">
+                      <p className={styles.secondaryText}>{generationStep}</p>
+                      <p className={styles.secondaryText}>{generationProgress}%</p>
+                    </div>
+                    <Progress value={generationProgress} className="h-2" />
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>
@@ -616,6 +706,16 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
             'Generate Outfit'
           )}
         </Button>
+        
+        {loading && (
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between">
+              <p className={styles.secondaryText}>{generationStep}</p>
+              <p className={styles.secondaryText}>{generationProgress}%</p>
+            </div>
+            <Progress value={generationProgress} className="h-2" />
+          </div>
+        )}
 
         {recommendation.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
