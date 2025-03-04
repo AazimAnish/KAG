@@ -2,6 +2,7 @@
 
 import { SignUpForm } from "@/components/ui/auth/SignUpForm";
 import { styles } from "@/utils/constants";
+import { Suspense } from "react";
 
 export default function SignUpPage() {
   return (
@@ -14,7 +15,9 @@ export default function SignUpPage() {
         <h1 className={`text-3xl font-bold mb-8 text-center ${styles.primaryText}`}>
           Create Account
         </h1>
-        <SignUpForm />
+        <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+          <SignUpForm />
+        </Suspense>
       </div>
     </div>
   );

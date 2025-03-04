@@ -2,6 +2,7 @@
 
 import { SignInForm } from "@/components/ui/auth/SignInForm";
 import { styles } from "@/utils/constants";
+import { Suspense } from "react";
 
 export default function SignInPage() {
   return (
@@ -14,7 +15,9 @@ export default function SignInPage() {
         <h1 className={`text-3xl font-bold mb-8 text-center ${styles.primaryText}`}>
           Welcome Back
         </h1>
-        <SignInForm />
+        <Suspense fallback={<div className="text-center p-4">Loading...</div>}>
+          <SignInForm />
+        </Suspense>
       </div>
     </div>
   );
