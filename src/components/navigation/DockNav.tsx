@@ -81,6 +81,7 @@ const NavItem = ({ href, icon, label, isActive }: NavItemProps) => {
 
 export const DockNav = () => {
     const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const pathname = usePathname();
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -93,8 +94,12 @@ export const DockNav = () => {
     const isDark = mounted && theme === 'dark';
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
+        const checkAuthState = async () => {
+            try {
+                setIsLoading(true);
+                // First check current session
+                const { data: { session } } = await supabase.auth.getSession();
+                
                 if (session?.user) {
                     const { data: profile } = await supabase
                         .from('profiles')
@@ -114,6 +119,24 @@ export const DockNav = () => {
                         });
                     }
                 } else {
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                setUser(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        checkAuthState();
+
+        // Setup auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    checkAuthState();
+                } else if (event === 'SIGNED_OUT') {
                     setUser(null);
                 }
             }
@@ -190,7 +213,14 @@ export const DockNav = () => {
                         </div>
                     ))}
 
-                    {user ? (
+                    {isLoading ? (
+                        <div className="h-8 w-8 flex items-center justify-center">
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    ) : user ? (
                         <ProfileDropdown user={user} />
                     ) : (
                         <div className="flex gap-2">

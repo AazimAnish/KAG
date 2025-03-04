@@ -6,28 +6,30 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Allow auth callback route to bypass middleware
-  if (path.startsWith('/auth')) {
+  // Allow these paths to bypass middleware
+  if (path.startsWith('/auth') || path.includes('_next') || path.includes('api')) {
     return response;
   }
 
   try {
-    // Handle authentication state
-    const isProtectedRoute = ['/dashboard', '/admin', '/profile', '/wardrobe', '/store/checkout', '/store/orders', '/dashboard/kag-ai']
-      .some(route => path.startsWith(route));
+    // Define protected routes that require authentication
+    const isProtectedRoute = [
+      '/dashboard', 
+      '/admin', 
+      '/profile', 
+      '/wardrobe', 
+      '/store/checkout', 
+      '/store/orders', 
+      '/kag-ai'
+    ].some(route => path.startsWith(route));
+    
     const isAuthRoute = ['/signin', '/signup'].includes(path);
 
+    // If user is authenticated
     if (session) {
       // Redirect logged-in users away from auth routes
       if (isAuthRoute) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-
-        const redirectUrl = profile?.role === 'admin' ? '/admin' : '/profile';
-        return NextResponse.redirect(new URL(redirectUrl, request.url));
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
 
       // Check admin role for admin routes
@@ -39,19 +41,22 @@ export async function middleware(request: NextRequest) {
           .single();
 
         if (profileError || !profile || profile.role !== 'admin') {
-          return NextResponse.redirect(new URL('/unauthorized', request.url));
+          return NextResponse.redirect(new URL('/dashboard', request.url));
         }
       }
 
+      // For authenticated users, allow access to protected routes
       return response;
     }
 
     // Handle non-authenticated users
     if (isProtectedRoute) {
+      // Store the intended URL to redirect back after login
       const redirectUrl = encodeURIComponent(path + request.nextUrl.search);
       return NextResponse.redirect(new URL(`/signin?redirect=${redirectUrl}`, request.url));
     }
 
+    // For non-authenticated users, allow access to public routes
     return response;
   } catch (error) {
     console.error('Middleware error:', error);

@@ -24,23 +24,24 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
 
   const handleLogout = async () => {
     try {
-      // First, clear any existing sessions
-      await supabase.auth.signOut({ scope: 'local' });
+      // First, clear any existing sessions - use global scope to clear all sessions
+      await supabase.auth.signOut({ scope: 'global' });
       
       // Clear any cached data
       localStorage.clear();
       sessionStorage.clear();
 
-      // Force a router refresh to clear client-side cache
-      router.refresh();
+      // Clear cookies via document.cookie (browser-only)
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf('=');
+        const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      }
 
-      // Navigate to signin page
-      router.push('/signin');
-
-      // Force page reload after a short delay to ensure clean state
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      // Force a hard refresh to clear client-side cache
+      window.location.href = '/signin';
     } catch (error) {
       console.error('Error during logout:', error);
       // Fallback: force clear everything

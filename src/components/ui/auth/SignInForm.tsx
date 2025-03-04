@@ -17,7 +17,7 @@ import {
 import { styles } from "@/utils/constants";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,6 +29,8 @@ type SignInFormValues = z.infer<typeof signInSchema>;
 export const SignInForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get('redirect') || '/dashboard';
 
   const form = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -49,13 +51,19 @@ export const SignInForm = () => {
 
       if (error) throw error;
 
-      router.push('/dashboard');
+      // Force a page refresh to ensure auth state is recognized across the app
+      if (redirectPath.startsWith('/')) {
+        // First navigate to the destination
+        window.location.href = redirectPath;
+      } else {
+        // If it's an encoded URL, decode it first
+        window.location.href = decodeURIComponent(redirectPath);
+      }
     } catch (error) {
       console.error('Error:', error);
       form.setError('root', {
         message: error instanceof Error ? error.message : 'Invalid credentials',
       });
-    } finally {
       setIsLoading(false);
     }
   };
