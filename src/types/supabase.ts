@@ -59,6 +59,35 @@ export interface Database {
           updated_at?: string
         }
       }
+      outfit_tryons: {
+        Row: {
+          id: string
+          user_id: string
+          top_image_url: string | null
+          bottom_image_url: string | null
+          result_image_url: string
+          created_at: string
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          top_image_url?: string | null
+          bottom_image_url?: string | null
+          result_image_url: string
+          created_at?: string
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          top_image_url?: string | null
+          bottom_image_url?: string | null
+          result_image_url?: string
+          created_at?: string
+          metadata?: Json | null
+        }
+      }
     }
   }
 } 
