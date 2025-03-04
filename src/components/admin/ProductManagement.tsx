@@ -126,8 +126,23 @@ export const ProductManagement = () => {
         throw new Error('File size must be less than 10MB');
       }
 
+      // Validate file type
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!validImageTypes.includes(file.type)) {
+        throw new Error('File must be a JPEG, PNG, or WebP image');
+      }
+
       updateUploadStatus('uploading', 30, 'Preparing file for upload...');
-      const fileExt = file.name.split('.').pop();
+      
+      // Ensure we have a proper file extension
+      let fileExt = file.name.split('.').pop()?.toLowerCase();
+      // Validate and normalize file extension
+      if (!fileExt || !['jpg', 'jpeg', 'png', 'webp'].includes(fileExt)) {
+        // Default to jpg if extension is invalid
+        fileExt = file.type === 'image/png' ? 'png' : 
+                  file.type === 'image/webp' ? 'webp' : 'jpg';
+      }
+      
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `store/${fileName}`;
 
@@ -158,6 +173,11 @@ export const ProductManagement = () => {
 
       if (!publicUrl) {
         throw new Error('Failed to get public URL');
+      }
+
+      // Validate the URL format
+      if (!publicUrl.startsWith('http')) {
+        throw new Error('Invalid URL format returned from storage');
       }
 
       // Analyze the image using the analyze-clothing API

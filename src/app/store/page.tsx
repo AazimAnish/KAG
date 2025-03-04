@@ -7,13 +7,14 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ImageOff } from 'lucide-react';
 import { styles } from '@/utils/constants';
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function StorePage() {
 
       if (queryError) throw queryError;
 
-      // Ensure each product has an images array, even if empty
+      // Process products to handle both images array and image_url field
       const validProducts = (data || []).map(product => ({
         ...product,
         images: product.images || [] // Provide empty array as fallback
@@ -45,6 +46,41 @@ export default function StorePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to determine the image source for a product
+  const getProductImageSrc = (product: any): string | null => {
+    // Skip if we've already determined this image has an error
+    if (product.id && imageErrors[product.id]) {
+      return null;
+    }
+
+    // First try image_url field
+    if (product.image_url) {
+      // Make sure the URL is valid and complete
+      if (typeof product.image_url === 'string' && 
+          (product.image_url.startsWith('http') || product.image_url.startsWith('/'))) {
+        return product.image_url;
+      }
+    }
+    
+    // Then try the first item in the images array
+    if (product.images && product.images.length > 0 && 
+        typeof product.images[0] === 'string' &&
+        (product.images[0].startsWith('http') || product.images[0].startsWith('/'))) {
+      return product.images[0];
+    }
+    
+    // No valid image available
+    return null;
+  };
+
+  // Handle image loading errors
+  const handleImageError = (productId: string) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [productId]: true
+    }));
   };
 
   if (loading) {
@@ -81,17 +117,20 @@ export default function StorePage() {
           <Card key={product.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
               <div className="relative aspect-square rounded-lg overflow-hidden mb-4 bg-muted">
-                {product.images?.[0] ? (
+                {getProductImageSrc(product) && !imageErrors[product.id] ? (
                   <Image
-                    src={product.images[0]}
+                    src={getProductImageSrc(product)!}
                     alt={product.name || 'Product image'}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    onError={() => handleImageError(product.id)}
+                    priority={true}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    No image available
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <ImageOff className="w-12 h-12 mb-2 opacity-50" />
+                    <p>Image unavailable</p>
                   </div>
                 )}
               </div>
