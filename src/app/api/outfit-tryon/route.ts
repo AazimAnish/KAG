@@ -14,7 +14,7 @@ fal.config({
 
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
-  
+
   try {
     const { userId, topImageUrl, bottomImageUrl, userImageUrl } = await request.json();
 
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       try {
         // Use the result from the top image processing or the original user image
         const inputImage = topResult ? topResult.data.images[0].url : userImageUrl;
-        
+
         finalResult = await fal.subscribe("fashn/tryon", {
           input: {
             model_image: inputImage,
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     // Get the final result image URL
     const resultUrl = finalResult ? finalResult.data.images[0].url : topResult!.data.images[0].url;
     console.log('Final result URL:', resultUrl.substring(0, 100) + '...');
-    
+
     // Define the try-on data to be saved
     const tryOnData = {
       user_id: userId,
@@ -144,18 +144,25 @@ export async function POST(request: Request) {
     }
 
     console.log('Try-on process completed successfully');
-    
+
     // Return the result
     return NextResponse.json({
       success: true,
       tryOn: savedTryOn || tryOnData,
-      resultImage: finalResult ? finalResult.data.images[0] : topResult!.data.images[0]
+      resultImage: {
+        url: resultUrl,
+        metadata: {
+          top_processed: !!topResult,
+          bottom_processed: !!finalResult,
+          processing_time: Date.now()
+        }
+      }
     });
 
   } catch (error) {
     console.error('Error in outfit try-on:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to generate try-on image',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

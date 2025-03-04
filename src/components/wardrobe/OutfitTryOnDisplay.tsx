@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, History } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
+import { supabase } from '@/lib/supabase/client';
 
 interface OutfitTryOnDisplayProps {
   userId: string;
@@ -21,12 +22,46 @@ interface OutfitTryOnDisplayProps {
   };
 }
 
+interface TryOnHistory {
+  id: string;
+  result_image_url: string;
+  created_at: string;
+  top_image_url: string | null;
+  bottom_image_url: string | null;
+}
+
 export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit }: OutfitTryOnDisplayProps) => {
   const [loading, setLoading] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processingStage, setProcessingStage] = useState<string>('');
+  const [tryOnHistory, setTryOnHistory] = useState<TryOnHistory[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchTryOnHistory();
+  }, [userId]);
+
+  const fetchTryOnHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('outfit_tryons')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTryOnHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching try-on history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load try-on history",
+        variant: "destructive",
+      });
+    }
+  };
 
   const generateTryOn = async () => {
     try {
@@ -47,7 +82,7 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
       });
 
       setProcessingStage('Sending request to API...');
-      
+
       const response = await fetch('/api/outfit-tryon', {
         method: 'POST',
         headers: {
@@ -59,22 +94,14 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
           topImageUrl: topOutfit?.image_url,
           bottomImageUrl: bottomOutfit?.image_url,
         }),
-      }).catch(err => {
-        console.error('Network error:', err);
-        throw new Error('Network error: Failed to connect to the server');
       });
 
-      if (!response) {
-        throw new Error('No response from server');
-      }
-
-      setProcessingStage('Processing AI response...');
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
+      setProcessingStage('Processing AI response...');
       const result = await response.json();
 
       if (!result.resultImage?.url) {
@@ -83,7 +110,10 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
 
       setResultImage(result.resultImage.url);
       setProcessingStage('');
-      
+
+      // Refresh history after successful generation
+      await fetchTryOnHistory();
+
       toast({
         title: "Success!",
         description: "Virtual try-on completed successfully.",
@@ -91,14 +121,14 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
       });
 
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while generating the try-on';
-      
+
       console.error('Try-on error:', error);
       setError(errorMessage);
       setProcessingStage('');
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -125,7 +155,7 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
             </div>
           </div>
         )}
-        
+
         {(topOutfit || bottomOutfit) && (
           <div className={`${styles.glassmorph} rounded-lg p-6`}>
             <h3 className={`${styles.primaryText} font-semibold mb-4`}>Selected Outfits</h3>
@@ -179,6 +209,34 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
         )}
       </div>
 
+      <div className="flex gap-4">
+        <Button
+          onClick={generateTryOn}
+          disabled={loading || !userImage || (!topOutfit && !bottomOutfit)}
+          className="flex-1"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating Try-On...
+            </>
+          ) : resultImage ? (
+            'Generate Again'
+          ) : (
+            'Generate Try-On'
+          )}
+        </Button>
+
+        <Button
+          onClick={() => setShowHistory(!showHistory)}
+          variant="outline"
+          className={`${styles.glassmorph} hover:bg-[#D98324]/20`}
+        >
+          <History className="h-4 w-4 mr-2" />
+          {showHistory ? 'Hide History' : 'Show History'}
+        </Button>
+      </div>
+
       {error && (
         <div className="text-red-500 text-sm mt-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-start">
           <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
@@ -189,22 +247,27 @@ export const OutfitTryOnDisplay = ({ userId, userImage, topOutfit, bottomOutfit 
         </div>
       )}
 
-      <Button
-        onClick={generateTryOn}
-        disabled={loading || !userImage || (!topOutfit && !bottomOutfit)}
-        className="w-full"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating Try-On...
-          </>
-        ) : resultImage ? (
-          'Generate Again'
-        ) : (
-          'Generate Try-On'
-        )}
-      </Button>
+      {showHistory && tryOnHistory.length > 0 && (
+        <div className={`${styles.glassmorph} rounded-lg p-6 mt-6`}>
+          <h3 className={`${styles.primaryText} font-semibold mb-4`}>Try-On History</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {tryOnHistory.map((item) => (
+              <div key={item.id} className="relative aspect-[3/4]">
+                <Image
+                  src={item.result_image_url}
+                  alt={`Try-on from ${new Date(item.created_at).toLocaleDateString()}`}
+                  fill
+                  className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setResultImage(item.result_image_url)}
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
+                  {new Date(item.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
