@@ -409,7 +409,8 @@ export const SignUpForm = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
+          className="w-full"
+          variant="default"
           disabled={isLoading}
         >
           {isLoading ? "Creating account..." : "Sign Up"}

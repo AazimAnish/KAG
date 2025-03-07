@@ -201,7 +201,19 @@ export default function StorePage() {
     }
   };
 
-  const handleQuickBuy = (product: Product) => {
+  const handleQuickBuy = async (product: Product) => {
+    // Check if user is logged in
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({
+        variant: "destructive",
+        title: "Not signed in",
+        description: "Please sign in to make a purchase"
+      });
+      router.push('/signin?redirect=/store');
+      return;
+    }
+    
     setQuickBuyProduct(product);
     setSelectedSize('');
     setSelectedColor('');

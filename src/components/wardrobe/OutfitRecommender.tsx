@@ -474,8 +474,20 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   // Function to add item to cart
   const addToCart = async (item: ClothingItem) => {
     try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          variant: "destructive",
+          title: "Not signed in",
+          description: "Please sign in to add items to your cart"
+        });
+        window.location.href = '/signin?redirect=/dashboard/wardrobe';
+        return;
+      }
+      
       // Get current cart from local storage
-      const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const currentCart = JSON.parse(localStorage.getItem(`cart_${session.user.id}`) || '[]');
       
       // Check if item already exists in cart
       const existingItemIndex = currentCart.findIndex((cartItem: any) => cartItem.id === item.id);
@@ -493,8 +505,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         });
       }
       
-      // Save updated cart to local storage
-      localStorage.setItem('cart', JSON.stringify(currentCart));
+      // Save updated cart to local storage with user ID in key
+      localStorage.setItem(`cart_${session.user.id}`, JSON.stringify(currentCart));
       
       // Show success message
       toast({
@@ -512,10 +524,31 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   };
 
   // Function to handle buy now action
-  const buyNow = (item: ClothingItem) => {
-    addToCart(item);
-    // Navigate to cart page
-    window.location.href = '/cart';
+  const buyNow = async (item: ClothingItem) => {
+    try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          variant: "destructive",
+          title: "Not signed in",
+          description: "Please sign in to purchase items"
+        });
+        window.location.href = '/signin?redirect=/dashboard/wardrobe';
+        return;
+      }
+      
+      await addToCart(item);
+      // Navigate to cart page
+      window.location.href = '/cart';
+    } catch (error) {
+      console.error('Error with buy now:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process your request"
+      });
+    }
   };
 
   return (
