@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, ImageOff, ShoppingBag } from 'lucide-react';
+import { Loader2, Trash2, ImageOff, ShoppingBag, Plus, Minus } from 'lucide-react';
 import { styles } from '@/utils/constants';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -41,6 +42,9 @@ export default function CartPage() {
   const [shippingAddress, setShippingAddress] = useState('');
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
   const [processingOrder, setProcessingOrder] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
+  const [currentItemName, setCurrentItemName] = useState<string>('');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -263,6 +267,13 @@ export default function CartPage() {
     }
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string, itemName: string) => {
+    setCurrentViewImage(imageUrl);
+    setCurrentItemName(itemName);
+    setViewerOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen pt-24">
@@ -311,7 +322,8 @@ export default function CartPage() {
                                   src={(item.images && item.images[0]) || item.image_url || '/placeholder.jpg'}
                                   alt={item.name}
                                   fill
-                                  className="object-cover"
+                                  className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => handleOpenImage((item.images && item.images[0]) || item.image_url || '/placeholder.jpg', item.name)}
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -474,6 +486,15 @@ export default function CartPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {viewerOpen && (
+        <ImageViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          imageUrl={currentViewImage}
+          alt={currentItemName}
+        />
+      )}
     </div>
   );
 } 

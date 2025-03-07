@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 interface WardrobeGridProps {
   userId?: string;
@@ -24,6 +26,10 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
+  const [currentItemName, setCurrentItemName] = useState<string>('');
 
   useEffect(() => {
     if (userId) {
@@ -134,6 +140,13 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
     setFilters(newFilters);
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string, itemName: string) => {
+    setCurrentViewImage(imageUrl);
+    setCurrentItemName(itemName);
+    setViewerOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
@@ -173,7 +186,8 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
                   src={item.image_url}
                   alt={item.name || item.type}
                   fill
-                  className="rounded-lg object-cover"
+                  className="rounded-lg object-cover cursor-pointer"
+                  onClick={() => handleOpenImage(item.image_url, item.name || item.type)}
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <div className={`text-white text-center p-2 ${styles.primaryText}`}>
@@ -187,6 +201,15 @@ export const WardrobeGrid = ({ userId, showFilters }: WardrobeGridProps) => {
             </div>
           ))}
         </div>
+      )}
+
+      {viewerOpen && (
+        <ImageViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          imageUrl={currentViewImage}
+          alt={currentItemName}
+        />
       )}
     </div>
   );

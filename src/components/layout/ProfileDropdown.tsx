@@ -63,7 +63,7 @@ export const ProfileDropdown = ({ user, onLogout }: ProfileDropdownProps) => {
   };
 
   const handleProfile = () => {
-    router.push('/profile');
+    router.push('/dashboard');
   };
 
   const handleSettings = () => {

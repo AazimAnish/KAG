@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -39,6 +40,9 @@ export default function StorePage() {
   const [shippingAddress, setShippingAddress] = useState('');
   const [processingOrder, setProcessingOrder] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
+  const [currentProductName, setCurrentProductName] = useState<string>('');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -201,7 +205,19 @@ export default function StorePage() {
     }
   };
 
-  const handleQuickBuy = (product: Product) => {
+  const handleQuickBuy = async (product: Product) => {
+    // Check if user is logged in
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      toast({
+        variant: "destructive",
+        title: "Not signed in",
+        description: "Please sign in to make a purchase"
+      });
+      router.push('/signin?redirect=/store');
+      return;
+    }
+    
     setQuickBuyProduct(product);
     setSelectedSize('');
     setSelectedColor('');
@@ -309,6 +325,14 @@ export default function StorePage() {
     }
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string | null, productName: string) => {
+    if (!imageUrl) return;
+    setCurrentViewImage(imageUrl);
+    setCurrentProductName(productName);
+    setViewerOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen pt-24">
@@ -364,9 +388,10 @@ export default function StorePage() {
                     src={getProductImageSrc(product)!}
                     alt={product.name || 'Product image'}
                     fill
-                    className="object-cover"
+                    className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     onError={() => handleImageError(product.id)}
+                    onClick={() => handleOpenImage(getProductImageSrc(product), product.name)}
                     priority={true}
                   />
                 ) : (
@@ -564,6 +589,15 @@ export default function StorePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {viewerOpen && (
+        <ImageViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          imageUrl={currentViewImage}
+          alt={currentProductName}
+        />
+      )}
     </div>
   );
 } 

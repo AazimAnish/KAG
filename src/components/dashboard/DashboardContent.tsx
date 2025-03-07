@@ -18,15 +18,17 @@ import { Pencil, Save, X, Upload } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 interface DashboardContentProps {
   user: User | null;
 }
 
 export const DashboardContent = ({ user }: DashboardContentProps) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<User | null>(user);
+  const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const { toast } = useToast();
 
   if (!user || !formData) return null;
@@ -155,6 +157,13 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
     }
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = () => {
+    if (formData?.avatar_url) {
+      setViewerOpen(true);
+    }
+  };
+
   return (
     <main className="container mx-auto px-4 pt-24">
       <div className="flex justify-end mb-4">
@@ -191,7 +200,8 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
                       src={formData.avatar_url}
                       alt={formData.name || 'Profile'}
                       fill
-                      className="rounded-full object-cover border-2 border-[#D98324 ]/30"
+                      className="rounded-full object-cover border-2 border-[#D98324 ]/30 cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={handleOpenImage}
                     />
                   ) : (
                     <div className="w-24 h-24 rounded-full bg-[#D98324]/20 flex items-center justify-center border-2 border-[#D98324 ]/30">
@@ -343,6 +353,15 @@ export const DashboardContent = ({ user }: DashboardContentProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {viewerOpen && formData?.avatar_url && (
+        <ImageViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          imageUrl={formData.avatar_url}
+          alt={formData.name || 'Profile picture'}
+        />
+      )}
     </main>
   );
 }; 

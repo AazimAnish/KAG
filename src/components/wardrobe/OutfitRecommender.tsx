@@ -41,6 +41,8 @@ import { User } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Progress } from "@/components/ui/progress";
+import { ImageViewer } from '@/components/ui/ImageViewer';
+import { Badge } from "@/components/ui/badge";
 
 interface OutfitRecommenderProps {
   userId: string;
@@ -83,6 +85,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [outfitDescription, setOutfitDescription] = useState('');
   const [outfit, setOutfit] = useState<any>(null);
   const [recommendationId, setRecommendationId] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
 
   // Event form state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -440,18 +444,22 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
     // Save the outfit description if available
     setOutfitDescription(responseData.outfit.description || '');
     
-    // Map the items to our expected format
+    // Map the items to our expected format with enhanced store/wardrobe distinction
     setRecommendation(responseData.outfit.items.map((item: any) => ({
       id: item.id || '',
       name: item.type || '',
       category: item.type || '',
-      color: '',  // This might not be provided in the API response
+      color: item.color || '',
       image_url: item.image_url || '',
       type: item.type || '',
       styling_notes: item.styling_notes || '',
       styling_tips: responseData.outfit.styling_tips || [],
+      // Handle store vs wardrobe flags
       isStoreItem: item.isStoreItem === true,
-      price: item.price || 0
+      isWardrobeItem: item.isWardrobeItem === true,
+      source: item.source || (item.isStoreItem ? 'store' : 'wardrobe'),
+      // Include price information for store items
+      price: item.isStoreItem ? (parseFloat(item.price) || 0) : 0
     })));
     
     // Set the outfit data for display
@@ -474,8 +482,20 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   // Function to add item to cart
   const addToCart = async (item: ClothingItem) => {
     try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          variant: "destructive",
+          title: "Not signed in",
+          description: "Please sign in to add items to your cart"
+        });
+        window.location.href = '/signin?redirect=/dashboard/wardrobe';
+        return;
+      }
+      
       // Get current cart from local storage
-      const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const currentCart = JSON.parse(localStorage.getItem(`cart_${session.user.id}`) || '[]');
       
       // Check if item already exists in cart
       const existingItemIndex = currentCart.findIndex((cartItem: any) => cartItem.id === item.id);
@@ -493,8 +513,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
         });
       }
       
-      // Save updated cart to local storage
-      localStorage.setItem('cart', JSON.stringify(currentCart));
+      // Save updated cart to local storage with user ID in key
+      localStorage.setItem(`cart_${session.user.id}`, JSON.stringify(currentCart));
       
       // Show success message
       toast({
@@ -512,10 +532,37 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   };
 
   // Function to handle buy now action
-  const buyNow = (item: ClothingItem) => {
-    addToCart(item);
-    // Navigate to cart page
-    window.location.href = '/cart';
+  const buyNow = async (item: ClothingItem) => {
+    try {
+      // Check if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          variant: "destructive",
+          title: "Not signed in",
+          description: "Please sign in to purchase items"
+        });
+        window.location.href = '/signin?redirect=/dashboard/wardrobe';
+        return;
+      }
+      
+      await addToCart(item);
+      // Navigate to cart page
+      window.location.href = '/cart';
+    } catch (error) {
+      console.error('Error with buy now:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process your request"
+      });
+    }
+  };
+
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string) => {
+    setCurrentViewImage(imageUrl);
+    setViewerOpen(true);
   };
 
   return (
@@ -711,11 +758,49 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                               src={item.image_url}
                               alt={item.name}
                               fill
-                              className="object-cover"
+                              className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => handleOpenImage(item.image_url)}
                             />
+                            {/* Item source badge */}
+                            <div className="absolute top-2 right-2 z-10">
+                              {item.isStoreItem ? (
+                                <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Store Item</Badge>
+                              ) : (
+                                <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Your Wardrobe</Badge>
+                              )}
+                            </div>
                           </div>
                         )}
-                        <p className={`text-sm ${styles.secondaryText}`}>{item.styling_notes}</p>
+                        <div className="space-y-2">
+                          <p className={`text-sm ${styles.secondaryText}`}>{item.styling_notes}</p>
+                          
+                          {/* Add buy/cart buttons for store items */}
+                          {item.isStoreItem && (
+                            <div className="pt-2">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-[#D98324] font-bold">${(item.price || 0).toFixed(2)}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 border-[#D98324] text-[#D98324] hover:bg-[#D98324]/10"
+                                  onClick={() => addToCart(item)}
+                                >
+                                  <ShoppingBag className="h-4 w-4 mr-2" />
+                                  Add to Cart
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="flex-1 bg-[#D98324] hover:bg-[#D98324]/80"
+                                  onClick={() => buyNow(item)}
+                                >
+                                  Buy Now
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -818,7 +903,7 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                 {item.isStoreItem && (
                   <div className="mt-2 flex flex-col gap-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-[#D98324] font-bold">${item.price}</span>
+                      <span className="text-[#D98324] font-bold">${(item.price || 0).toFixed(2)}</span>
                       <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Store Item</span>
                     </div>
                     <div className="flex justify-between gap-2">
@@ -850,6 +935,15 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </div>
             ))}
           </div>
+        )}
+
+        {viewerOpen && (
+          <ImageViewer
+            isOpen={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            imageUrl={currentViewImage}
+            alt="Outfit item"
+          />
         )}
       </div>
     </div>

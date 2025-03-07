@@ -109,7 +109,8 @@ export const SignInForm = () => {
 
         <Button
           type="submit"
-          className="w-full bg-[#D98324 ] hover:bg-[#D98324 ]/80 text-[#FFFDEC]"
+          className="w-full"
+          variant="default"
           disabled={isLoading}
         >
           {isLoading ? "Signing in..." : "Sign In"}
