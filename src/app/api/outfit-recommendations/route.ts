@@ -111,7 +111,9 @@ export async function POST(request: Request) {
         category: item.category,
         color: item.color,
         image_url: item.image_url,
-        isWardrobeItem: true
+        source: "wardrobe",
+        isWardrobeItem: true,
+        isStoreItem: false
       })) || [];
       
       // Process store items to have consistent fields
@@ -122,8 +124,10 @@ export async function POST(request: Request) {
         category: item.category,
         color: item.color,
         image_url: item.image_url,
-        price: item.price,
-        isStoreItem: true
+        price: parseFloat(item.price) || 0,
+        source: "store",
+        isStoreItem: true,
+        isWardrobeItem: false
       }));
       
       console.log(`Found ${processedWardrobeItems.length} wardrobe items and ${processedStoreItems.length} store items`);
@@ -174,7 +178,10 @@ Format your response as a valid JSON object with this exact structure:
         "id": "ID from available items",
         "type": "Type of item",
         "styling_notes": "How to wear this piece",
-        "image_url": "URL from available items"
+        "image_url": "URL from available items",
+        "isWardrobeItem": true/false,
+        "isStoreItem": true/false,
+        "price": "Include price only for store items (numeric value, no currency symbol)"
       }
     ],
     "styling_tips": ["tip1", "tip2", "tip3"]
@@ -196,6 +203,8 @@ ${hasStoreItems ? '2. Include at least 1 store item in your recommendations' : '
 3. Provide detailed styling notes for each item
 4. Include 3 styling tips for the overall outfit
 5. Avoid redundant items - don't recommend similar items that serve the same purpose
+6. Preserve all item properties in your response, including isStoreItem, isWardrobeItem, and price for store items
+7. For store items, highlight how they complement the wardrobe items in the styling notes
 
 Available Wardrobe Items:
 ${JSON.stringify(processedWardrobeItems, null, 2)}
