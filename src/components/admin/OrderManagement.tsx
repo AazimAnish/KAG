@@ -35,6 +35,9 @@ interface OrderWithUser extends Order {
     name: string;
     email: string;
   };
+  profiles?: {
+    name: string | null;
+  };
 }
 
 export const OrderManagement = () => {
@@ -54,15 +57,24 @@ export const OrderManagement = () => {
         .from('orders')
         .select(`
           *,
-          user:user_id (
-            name,
-            email
+          profiles!user_id(
+            name
           )
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+
+      // Transform the data to match the expected OrderWithUser interface
+      const ordersWithUserInfo = data?.map(order => ({
+        ...order,
+        user: {
+          name: order.profiles?.name || 'Unknown',
+          email: '' // Email is stored in auth.users, not accessible in this query
+        }
+      })) || [];
+
+      setOrders(ordersWithUserInfo);
     } catch (error) {
       console.error('Error loading orders:', error);
       toast({
@@ -181,8 +193,8 @@ export const OrderManagement = () => {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <h3 className="font-semibold text-lg mb-2">Customer Information</h3>
-                                  <p><span className="font-medium">Name:</span> {selectedOrder.user?.name}</p>
-                                  <p><span className="font-medium">Email:</span> {selectedOrder.user?.email}</p>
+                                  <p><span className="font-medium">Name:</span> {selectedOrder.user?.name || 'Unknown'}</p>
+                                  <p><span className="font-medium">Email:</span> {selectedOrder.user?.email || 'Not available'}</p>
                                 </div>
                                 <div>
                                   <h3 className="font-semibold text-lg mb-2">Order Information</h3>
