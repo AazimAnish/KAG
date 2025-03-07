@@ -41,6 +41,7 @@ import { User } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { Progress } from "@/components/ui/progress";
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 interface OutfitRecommenderProps {
   userId: string;
@@ -83,6 +84,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
   const [outfitDescription, setOutfitDescription] = useState('');
   const [outfit, setOutfit] = useState<any>(null);
   const [recommendationId, setRecommendationId] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
 
   // Event form state
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -551,6 +554,12 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
     }
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string) => {
+    setCurrentViewImage(imageUrl);
+    setViewerOpen(true);
+  };
+
   return (
     <div className="grid md:grid-cols-[300px,1fr] gap-6">
       {/* Past Suggestions Sidebar */}
@@ -744,7 +753,8 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
                               src={item.image_url}
                               alt={item.name}
                               fill
-                              className="object-cover"
+                              className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => handleOpenImage(item.image_url)}
                             />
                           </div>
                         )}
@@ -883,6 +893,15 @@ export const OutfitRecommender = ({ userId }: OutfitRecommenderProps) => {
               </div>
             ))}
           </div>
+        )}
+
+        {viewerOpen && (
+          <ImageViewer
+            isOpen={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            imageUrl={currentViewImage}
+            alt="Outfit item"
+          />
         )}
       </div>
     </div>

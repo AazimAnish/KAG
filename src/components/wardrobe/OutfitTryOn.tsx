@@ -8,6 +8,7 @@ import { styles } from '@/utils/constants';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/lib/supabase/client';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 
 interface OutfitTryOnProps {
   userId: string;
@@ -31,6 +32,8 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
   const [tryOnHistory, setTryOnHistory] = useState<TryOnHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentViewImage, setCurrentViewImage] = useState<string>('');
 
   useEffect(() => {
     fetchTryOnHistory();
@@ -130,69 +133,56 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
     }
   };
 
+  // Handle opening image in fullscreen viewer
+  const handleOpenImage = (imageUrl: string) => {
+    setCurrentViewImage(imageUrl);
+    setViewerOpen(true);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className={`${styles.glassmorph} rounded-lg p-6`}>
-          <h3 className={`${styles.primaryText} font-semibold mb-4`}>Your Photo</h3>
-          <div className="relative aspect-[3/4] w-full">
-            {userImageUrl ? (
-              <Image
-                src={userImageUrl}
-                alt="User"
-                fill
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <AlertCircle className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`${styles.glassmorph} rounded-lg p-6 space-y-4`}>
+          <h3 className={`${styles.primaryText} font-semibold`}>Your Photo</h3>
+          <div className="aspect-[3/4] relative">
+            <Image
+              src={userImageUrl}
+              alt="Your photo"
+              fill
+              className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => handleOpenImage(userImageUrl)}
+            />
           </div>
         </div>
 
-        <div className={`${styles.glassmorph} rounded-lg p-6`}>
-          <h3 className={`${styles.primaryText} font-semibold mb-4`}>Selected Outfit</h3>
-          <div className="relative aspect-[3/4] w-full">
-            {outfitImageUrl ? (
-              <Image
-                src={outfitImageUrl}
-                alt="Outfit"
-                fill
-                className="rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <AlertCircle className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
+        <div className={`${styles.glassmorph} rounded-lg p-6 space-y-4`}>
+          <h3 className={`${styles.primaryText} font-semibold`}>Selected Outfit</h3>
+          <div className="aspect-[3/4] relative">
+            <Image
+              src={outfitImageUrl}
+              alt="Outfit image"
+              fill
+              className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => handleOpenImage(outfitImageUrl)}
+            />
           </div>
         </div>
-
-        {(tryOnImage || loading) && (
-          <div className={`${styles.glassmorph} rounded-lg p-6`}>
-            <h3 className={`${styles.primaryText} font-semibold mb-4`}>
-              Result
-              {loading && <Badge variant="info" className="ml-2">Processing</Badge>}
-            </h3>
-            <div className="relative aspect-[3/4] w-full">
-              {tryOnImage ? (
-                <Image
-                  src={tryOnImage}
-                  alt="Try-on Result"
-                  fill
-                  className="rounded-lg object-cover"
-                />
-              ) : loading ? (
-                <div className="flex flex-col items-center justify-center h-full bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                  <p className="text-sm text-center max-w-[250px]">{processingStage}</p>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        )}
       </div>
+      
+      {tryOnImage && !loading && !error && (
+        <div className={`${styles.glassmorph} rounded-lg p-6 space-y-4`}>
+          <h3 className={`${styles.primaryText} font-semibold`}>Result</h3>
+          <div className="aspect-[3/4] relative">
+            <Image
+              src={tryOnImage}
+              alt="Try-on result"
+              fill
+              className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => handleOpenImage(tryOnImage)}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-4">
         <Button
@@ -246,7 +236,7 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
                   alt={`Try-on from ${new Date(item.created_at).toLocaleDateString()}`}
                   fill
                   className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setTryOnImage(item.result_image_url)}
+                  onClick={() => handleOpenImage(item.result_image_url)}
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
                   {new Date(item.created_at).toLocaleDateString()}
@@ -255,6 +245,15 @@ export const OutfitTryOn = ({ userId, outfitImageUrl, userImageUrl }: OutfitTryO
             ))}
           </div>
         </div>
+      )}
+
+      {viewerOpen && (
+        <ImageViewer
+          isOpen={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          imageUrl={currentViewImage}
+          alt="Enlarged image"
+        />
       )}
     </div>
   );
