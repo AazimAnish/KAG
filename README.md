@@ -26,7 +26,7 @@ KAG AI is a sophisticated AI-powered fashion assistant that revolutionizes perso
 - **Shopping Integration**: "Buy Now" and "Add to Cart" functionality for recommended store items
 
 ### 4. AI Style Assistant Chat
-- **Powered by Mixtral-8x7b-32768**: Context-aware styling advice via Groq API
+- **Powered by Deepseek-r1-distill-llama-70b**: Context-aware styling advice via Groq API
 - **Outfit-Specific Chat**: Detailed conversations about specific outfit recommendations
 - **General Fashion Advice**: Answer any fashion or style-related questions
 - **Chat History**: Persistent conversation history for continued styling assistance
@@ -59,8 +59,8 @@ KAG AI is a sophisticated AI-powered fashion assistant that revolutionizes perso
 
 ### AI Models & Integration
 - **Clothing Analysis**: Llama-3.2-90B-Vision (via Groq) for image classification and tagging
-- **Outfit Recommendations**: Mixtral-8x7b-32768 (via Groq) with structured JSON output
-- **Fashion Chat Assistant**: Mixtral-8x7b-32768 (via Groq) for conversational fashion advice
+- **Outfit Recommendations**: Llama 3.3 70B Versatile (via Groq) with structured JSON output
+- **Fashion Chat Assistant**: Llama 3.3 70B Versatile (via Groq) for conversational fashion advice
 - **Virtual Try-On**: fal.ai API implementing TryOnDiffusion architecture
 - **AI Provider**: Groq for fast and reliable AI model inference
 
@@ -126,9 +126,9 @@ KAG AI is a sophisticated AI-powered fashion assistant that revolutionizes perso
   - Includes in-memory caching to avoid repeated analysis
   - Error handling with fallback values
 
-### 2. Outfit Recommendation API (Mixtral-8x7b-32768)
+### 2. Outfit Recommendation API (Llama 3.3 70B Versatile)
 - **Endpoint**: `/api/outfit-recommendations`
-- **Model**: Mixtral-8x7b-32768 (Groq)
+- **Model**: Llama 3.3 70B Versatile (Groq)
 - **Features**:
   - Generates personalized outfit recommendations based on event type, user profile, and available items
   - Combines wardrobe items with store products for complete outfits
@@ -137,9 +137,9 @@ KAG AI is a sophisticated AI-powered fashion assistant that revolutionizes perso
   - Implements timeout handling for API requests
   - Error recovery for malformed responses
 
-### 3. Fashion Chat API (Mixtral-8x7b-32768)
+### 3. Fashion Chat API (Llama 3.3 70B Versatile)
 - **Endpoint**: `/api/outfit-chat`
-- **Model**: Mixtral-8x7b-32768 (Groq)
+- **Model**: Llama 3.3 70B Versatile (Groq)
 - **Features**:
   - Provides context-aware fashion advice
   - Supports both outfit-specific and general fashion questions

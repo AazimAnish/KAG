@@ -146,7 +146,7 @@ export async function POST(request: Request) {
             content: contextPrompt
           }
         ],
-        model: "mixtral-8x7b-32768",
+        model: "deepseek-r1-distill-llama-70b",
         temperature: 0.7,
         max_tokens: 800,
         top_p: 1,

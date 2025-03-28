@@ -227,7 +227,7 @@ ${JSON.stringify(filteredStoreItems, null, 2)}`;
               content: systemPrompt
             }
           ],
-          model: "mixtral-8x7b-32768",
+          model: "deepseek-r1-distill-llama-70b",
           temperature: 0.5,
           max_tokens: 1024,
           top_p: 1,
